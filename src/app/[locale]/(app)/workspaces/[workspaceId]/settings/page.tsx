@@ -2,12 +2,14 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, History } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { requireUser } from "@/lib/auth";
 import { getWorkspace } from "@/lib/data/drive";
 import { ListSkeleton, PageContainer, PageHeader } from "@/components/drive/views";
 import { Section } from "@/components/settings/section";
+import { LinkRow } from "@/components/settings/link-row";
+import { PlanSection } from "@/components/settings/plan-section";
 import { StorageCard } from "@/components/settings/storage-card";
 import { WorkspaceMembers } from "@/components/settings/workspace-members";
 import { LeaveWorkspaceButton, WorkspaceRenameForm } from "@/components/settings/workspace-general";
@@ -27,11 +29,13 @@ export default function WorkspaceSettingsPage({ params }: PageProps<"/[locale]/w
 
 async function WorkspaceSettings({ params }: { params: Promise<{ workspaceId: string }> }) {
   const { workspaceId } = await params;
-  const [user, workspace, t, settings] = await Promise.all([
+  const [user, workspace, t, settings, activity, billing] = await Promise.all([
     requireUser(),
     getWorkspace(workspaceId),
     getTranslations("workspace"),
     getTranslations("settings"),
+    getTranslations("activity"),
+    getTranslations("billing"),
   ]);
   if (!workspace || workspace.kind !== "team") notFound();
   const canManage = workspace.role === "owner" || workspace.role === "admin";
@@ -64,6 +68,16 @@ async function WorkspaceSettings({ params }: { params: Promise<{ workspaceId: st
         <Section title={settings("storage")}>
           <StorageCard workspace={workspace} />
         </Section>
+        {canManage ? (
+          <Section title={billing("title")}>
+            <PlanSection workspace={workspace} />
+          </Section>
+        ) : null}
+        {canManage ? (
+          <Section title={activity("title")}>
+            <LinkRow href={`/workspaces/${workspace.id}/activity`} icon={<History />} label={activity("link")} />
+          </Section>
+        ) : null}
         {workspace.role !== "owner" ? (
           <div>
             <LeaveWorkspaceButton workspaceId={workspace.id} userId={user.id} />

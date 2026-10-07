@@ -23,7 +23,47 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "document_assets": {
+            "audit_events": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"actor_name": string | null,"created_at": string,"details": NonNullable<Json>,"id": number,"target_id": string | null,"target_name": string | null,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"actor_name"?: string | null,"created_at"?: string,"details"?: NonNullable<Json>,"id"?: never,"target_id"?: string | null,"target_name"?: string | null,"workspace_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"actor_name"?: string | null,"created_at"?: string,"details"?: NonNullable<Json>,"id"?: never,"target_id"?: string | null,"target_name"?: string | null,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "audit_events_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"billing_customers": {
+                  Row: {
+                    "created_at": string,"customer_id": string,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"customer_id": string,"workspace_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"customer_id"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "billing_customers_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: true
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"document_assets": {
                   Row: {
                     "created_at": string,"created_by": string | null,"file_id": string,"id": string,"mime_type": string | null,"size_bytes": number,"status": Database["public"]['Enums']["file_status"],"storage_path": string,"workspace_id": string
                   }
@@ -357,6 +397,38 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"notifications": {
+                  Row: {
+                    "actor_id": string | null,"actor_name": string | null,"created_at": string,"data": NonNullable<Json>,"file_id": string | null,"id": number,"kind": string,"read_at": string | null,"subject": string,"user_id": string,"workspace_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "actor_id"?: string | null,"actor_name"?: string | null,"created_at"?: string,"data"?: NonNullable<Json>,"file_id"?: string | null,"id"?: never,"kind": string,"read_at"?: string | null,"subject": string,"user_id": string,"workspace_id"?: string | null
+                  }
+                  Update: {
+                    "actor_id"?: string | null,"actor_name"?: string | null,"created_at"?: string,"data"?: NonNullable<Json>,"file_id"?: string | null,"id"?: never,"kind"?: string,"read_at"?: string | null,"subject"?: string,"user_id"?: string,"workspace_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "notifications_file_id_fkey"
+      columns: ["file_id"]
+isOneToOne: false
+      referencedRelation: "drive_items"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_file_id_fkey"
+      columns: ["file_id"]
+isOneToOne: false
+      referencedRelation: "files"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"plans": {
                   Row: {
                     "created_at": string,"currency": string,"features": NonNullable<Json>,"id": string,"is_public": boolean,"max_file_size_bytes": number,"max_members": number,"name": string,"price_monthly_cents": number | null,"price_yearly_cents": number | null,"sort_order": number,"storage_quota_bytes": number,"trash_retention_days": number
@@ -548,8 +620,27 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"admin_list_users":
+{ Args: { "p_limit": number,"p_offset": number,"p_query": string }; Returns: {
+              "confirmed": boolean,"created_at": string,"email": string,"full_name": string,"id": string,"last_sign_in_at": string,"locale": string,"storage_used_bytes": number,"teams": number,"total": number
+            }[]
+                           },
+"admin_list_workspaces":
+{ Args: { "p_limit": number,"p_offset": number,"p_query": string }; Returns: {
+              "created_at": string,"id": string,"kind": Database["public"]['Enums']["workspace_kind"],"members": number,"name": string,"owner_email": string,"owner_name": string,"plan_id": string,"storage_quota_bytes": number,"storage_used_bytes": number,"subscription_status": string,"total": number
+            }[]
+                           },
+"admin_overview":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"admin_set_workspace_plan":
+{ Args: { "p_actor_id": string,"p_plan_id": string,"p_workspace_id": string }; Returns: undefined
+                           },
 "append_document_update":
 { Args: { "p_file_id": string,"p_payload": string }; Returns: number
+                           },
+"apply_subscription":
+{ Args: { "p_cancel_at_period_end": boolean,"p_period_end": string,"p_period_start": string,"p_plan_id": string,"p_provider_customer_id": string,"p_provider_subscription_id": string,"p_status": string,"p_workspace_id": string }; Returns: string
                            },
 "assert_file_access":
 { Args: { "p_file_id": string,"p_min_level": number }; Returns: {
@@ -729,11 +820,17 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"current_actor":
+{ Args: Record<PropertyKey, never>; Returns: string
+                           },
 "delete_comment":
 { Args: { "p_comment_id": string }; Returns: undefined
                            },
 "delete_files_forever":
 { Args: { "p_file_ids": (string)[] }; Returns: (string)[]
+                           },
+"display_name_of":
+{ Args: { "p_user_id": string }; Returns: string
                            },
 "edit_comment":
 { Args: { "p_body": string,"p_comment_id": string }; Returns: undefined
@@ -785,11 +882,23 @@ isOneToOne: false
 "load_document":
 { Args: { "p_file_id": string }; Returns: Json
                            },
+"log_audit":
+{ Args: { "p_action": string,"p_actor"?: string,"p_details"?: Json,"p_target_id": string,"p_target_name": string,"p_workspace_id": string }; Returns: undefined
+                           },
+"log_file_download":
+{ Args: { "p_file_id": string }; Returns: undefined
+                           },
+"mark_notifications_read":
+{ Args: { "p_ids"?: (number)[] }; Returns: number
+                           },
 "max_indexed_chars":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
 "move_files":
 { Args: { "p_file_ids": (string)[],"p_target_parent_id": string }; Returns: number
+                           },
+"notify":
+{ Args: { "p_actor": string,"p_data": Json,"p_file_id": string,"p_kind": string,"p_subject": string,"p_user_id": string,"p_workspace_id": string }; Returns: undefined
                            },
 "prepare_member_notification":
 { Args: { "p_user_id": string,"p_workspace_id": string }; Returns: {
@@ -803,6 +912,9 @@ isOneToOne: false
                            },
 "profile_display_name":
 { Args: { "p_user_id": string }; Returns: string
+                           },
+"prune_activity":
+{ Args: Record<PropertyKey, never>; Returns: Json
                            },
 "prune_notification_log":
 { Args: Record<PropertyKey, never>; Returns: number
@@ -990,6 +1102,9 @@ isOneToOne: false
       } },
 "update_workspace_member":
 { Args: { "p_role": Database["public"]['Enums']["workspace_role"],"p_user_id": string,"p_workspace_id": string }; Returns: undefined
+                           },
+"user_file_access_level":
+{ Args: { "p_file_id": string,"p_user_id": string }; Returns: number
                            },
 "workspace_role_of":
 { Args: { "p_workspace_id": string }; Returns: Database["public"]['Enums']["workspace_role"]

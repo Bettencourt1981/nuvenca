@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import * as Y from "yjs";
+import { IndexeddbPersistence } from "y-indexeddb";
 import { createClient } from "@/lib/supabase/client";
 import { colorFor } from "@/lib/collab/colors";
 import {
   SupabaseYjsProvider,
+  type LocalCache,
   type Collaborator,
   type ConnectionStatus,
   type SaveStatus,
@@ -13,6 +15,7 @@ import {
 import { compactDocument } from "@/lib/actions/documents";
 import type { NativeType } from "@/lib/editors/native";
 import { nativeText } from "@/lib/editors/text";
+import { setUpOffline } from "@/lib/offline";
 
 export type CollabUser = { id: string; name: string };
 
@@ -34,6 +37,7 @@ export function useCollaboration({
   const [session] = useState(() => {
     const doc = new Y.Doc();
     const provider = new SupabaseYjsProvider({
+      localCache: openLocalCache(user.id, fileId, doc),
       supabase: createClient(),
       fileId,
       doc,
@@ -50,6 +54,10 @@ export function useCollaboration({
   const [synced, setSynced] = useState(provider.synced);
   const [peers, setPeers] = useState<Collaborator[]>(provider.peers);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void setUpOffline(user.id);
+  }, [user.id]);
 
   useEffect(() => {
     const unsubscribe = [
@@ -104,4 +112,25 @@ export function useCollaboration({
   }, [doc, provider, fileId, type, canEdit, synced]);
 
   return { ...session, status, saveStatus, synced, peers, error };
+}
+
+/**
+ * The document's copy in this browser (IndexedDB), for opening and editing it
+ * offline. One database per person and file; cleared when they sign out.
+ */
+export const localCacheName = (userId: string, fileId: string) => `nuvenca-doc:${userId}:${fileId}`;
+
+function openLocalCache(userId: string, fileId: string, doc: Y.Doc): LocalCache | undefined {
+  if (typeof indexedDB === "undefined") return undefined;
+  try {
+    const persistence = new IndexeddbPersistence(localCacheName(userId, fileId), doc);
+    return {
+      whenReady: persistence.whenSynced.catch(() => undefined),
+      origin: persistence,
+      hasData: () => doc.store.clients.size > 0,
+      destroy: () => void persistence.destroy(),
+    };
+  } catch {
+    return undefined;
+  }
 }

@@ -22,6 +22,21 @@ import { fromBase64, toBase64 } from "./base64";
  */
 
 export type ConnectionStatus = "connecting" | "connected" | "offline";
+
+export type LocalCache = {
+  /** Resolves once the local copy has been applied to the document. */
+  whenReady: Promise<unknown>;
+  /** Transaction origin of updates applied from the local copy. */
+  origin: unknown;
+  hasData: () => boolean;
+  destroy: () => void;
+};
+
+/** A request that failed because there is no connection (vs. a refusal). */
+function isNetworkError(error: { message?: string } | null | undefined) {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return true;
+  return /failed to fetch|networkerror|network request failed|load failed|fetch failed/i.test(error?.message ?? "");
+}
 export type SaveStatus = "saved" | "saving" | "unsaved" | "error";
 
 export type Collaborator = { key: string; userId: string; name: string; color: string; canEdit: boolean };
@@ -68,7 +83,14 @@ export class SupabaseYjsProvider {
   private subscribedBefore = false;
   private destroyed = false;
   private destroyTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Bumped by every connect/disconnect, so a connect that was overtaken stops. */
+  private session = 0;
+  /** The previous channel's removal; Supabase reuses a channel with the same topic until it is gone. */
+  private removing: Promise<unknown> | null = null;
   private onCompactNeeded?: () => void;
+  private localCache?: LocalCache;
+  private loaded = false;
+  private loading: Promise<void> | null = null;
   private user: { id: string; name: string; color: string };
 
   status: ConnectionStatus = "connecting";
@@ -83,6 +105,12 @@ export class SupabaseYjsProvider {
     canEdit: boolean;
     user: { id: string; name: string; color: string };
     onCompactNeeded?: () => void;
+    /**
+     * A local copy of the document (IndexedDB) for offline use. Updates it
+     * applies are not saved again; edits the server lacks are found and saved
+     * when the document loads.
+     */
+    localCache?: LocalCache;
   }) {
     this.supabase = options.supabase;
     this.fileId = options.fileId;
@@ -90,6 +118,7 @@ export class SupabaseYjsProvider {
     this.canEdit = options.canEdit;
     this.user = options.user;
     this.onCompactNeeded = options.onCompactNeeded;
+    this.localCache = options.localCache;
     this.awareness = new Awareness(this.doc);
     this.awareness.setLocalStateField("user", { name: options.user.name, color: options.user.color });
 
@@ -108,13 +137,14 @@ export class SupabaseYjsProvider {
     this.destroyTimer = null;
     if (this.connected || this.destroyed) return;
     this.connected = true;
+    const session = ++this.session;
     this.doc.on("update", this.handleDocUpdate);
     this.awareness.on("update", this.handleAwarenessUpdate);
     window.addEventListener("online", this.handleOnline);
     window.addEventListener("offline", this.handleOffline);
     window.addEventListener("beforeunload", this.handleBeforeUnload);
-    await this.supabase.realtime.setAuth();
-    if (!this.connected) return;
+    await Promise.all([this.supabase.realtime.setAuth(), this.removing]);
+    if (!this.connected || session !== this.session) return;
     const channel = this.supabase.channel(`file:${this.fileId}`, {
       config: { private: true, broadcast: { self: false }, presence: { key: String(this.doc.clientID) } },
     });
@@ -147,8 +177,9 @@ export class SupabaseYjsProvider {
           this.broadcastAwareness(true);
         }
         void this.flushSave();
-        // After a disconnection, fetch what was saved meanwhile by people who have since left.
-        if (this.subscribedBefore) void this.load();
+        // After a disconnection (or an offline start), fetch what was saved
+        // meanwhile and save what this copy has that the server lacks.
+        if (this.subscribedBefore || !this.loaded) void this.load();
         this.subscribedBefore = true;
       } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
         this.setStatus("offline");
@@ -159,21 +190,45 @@ export class SupabaseYjsProvider {
   }
 
   /** Load the stored state (and any edits not yet merged into it). */
-  async load() {
+  load(): Promise<void> {
+    this.loading ??= this.loadOnce().finally(() => {
+      this.loading = null;
+    });
+    return this.loading;
+  }
+
+  private async loadOnce() {
+    // The local copy first, so the comparison below sees offline edits.
+    if (this.localCache) await Promise.race([this.localCache.whenReady, new Promise((r) => setTimeout(r, 3000))]);
     const { data, error } = await this.supabase.rpc("load_document", { p_file_id: this.fileId });
     if (error || !data) {
+      if (isNetworkError(error)) {
+        // Offline: work on the local copy, if there is one, and load later.
+        this.setStatus("offline");
+        if (this.localCache?.hasData()) {
+          if (!this.synced) {
+            this.synced = true;
+            this.emit("synced", true);
+          }
+        } else {
+          this.emit("error", "offline_unavailable");
+        }
+        return;
+      }
       this.emit("error", error?.message ?? "not_found");
       return;
     }
     const result = data as unknown as LoadResult;
+    const stored = [result.state, ...result.updates.map((u) => u.payload)].filter(Boolean).map((b64) => fromBase64(b64!));
     Y.transact(
       this.doc,
       () => {
-        if (result.state) Y.applyUpdate(this.doc, fromBase64(result.state), "load");
-        for (const update of result.updates) Y.applyUpdate(this.doc, fromBase64(update.payload), "load");
+        for (const update of stored) Y.applyUpdate(this.doc, update, "load");
       },
       "load",
     );
+    if (this.canEdit) this.saveWhatTheServerLacks(stored);
+    this.loaded = true;
     if (!this.synced) {
       this.synced = true;
       this.emit("synced", true);
@@ -181,10 +236,34 @@ export class SupabaseYjsProvider {
     if (this.canEdit && result.updates.length > COMPACT_AFTER_UPDATES) this.onCompactNeeded?.();
   }
 
+  /**
+   * Edits that exist here but not on the server (made offline, or never
+   * saved before the tab closed) are saved and shared now. Snapshots are
+   * compared, not just state vectors, so offline deletions count too.
+   */
+  private saveWhatTheServerLacks(stored: Uint8Array[]) {
+    const server = new Y.Doc();
+    try {
+      for (const update of stored) Y.applyUpdate(server, update);
+      const missing = Y.encodeStateAsUpdate(this.doc, Y.encodeStateVector(server));
+      const before = Y.snapshot(server);
+      Y.applyUpdate(server, missing);
+      if (Y.equalSnapshots(before, Y.snapshot(server))) return;
+      this.unsaved.push(missing);
+      this.outgoing.push(missing);
+      this.setSaveStatus("unsaved");
+      if (!this.broadcastTimer) this.broadcastTimer = setTimeout(this.flushBroadcast, BROADCAST_INTERVAL);
+      this.scheduleSave();
+    } finally {
+      server.destroy();
+    }
+  }
+
   /** Stop syncing (pending edits are still saved). Destroys itself shortly after unless reconnected. */
   disconnect() {
     if (!this.connected) return;
     this.connected = false;
+    this.session++;
     if (this.broadcastTimer) {
       clearTimeout(this.broadcastTimer);
       this.flushBroadcast();
@@ -196,7 +275,13 @@ export class SupabaseYjsProvider {
     window.removeEventListener("online", this.handleOnline);
     window.removeEventListener("offline", this.handleOffline);
     window.removeEventListener("beforeunload", this.handleBeforeUnload);
-    if (this.channel) void this.supabase.removeChannel(this.channel);
+    if (this.channel) {
+      const removing = this.supabase.removeChannel(this.channel).catch(() => undefined);
+      this.removing = removing;
+      void removing.then(() => {
+        if (this.removing === removing) this.removing = null;
+      });
+    }
     this.channel = null;
     this.setStatus("connecting");
     this.destroyTimer = setTimeout(() => this.destroy(), 1000);
@@ -207,6 +292,7 @@ export class SupabaseYjsProvider {
     this.destroyed = true;
     this.awareness.destroy();
     if (this.saveTimer) clearTimeout(this.saveTimer);
+    this.localCache?.destroy();
   }
 
   // ---------------------------------------------------------------------------
@@ -247,8 +333,9 @@ export class SupabaseYjsProvider {
   // ---------------------------------------------------------------------------
 
   private handleDocUpdate = (update: Uint8Array, origin: unknown) => {
-    // Remote and loaded updates are already shared/stored.
+    // Remote, loaded and locally cached updates are already shared/stored.
     if (origin === this || origin === "load" || !this.canEdit) return;
+    if (this.localCache && origin === this.localCache.origin) return;
     this.outgoing.push(update);
     this.unsaved.push(update);
     this.setSaveStatus("unsaved");
@@ -405,15 +492,16 @@ export class SupabaseYjsProvider {
 
   private handleOnline = () => {
     this.setStatus("connecting");
+    if (!this.loaded) void this.load();
     void this.flushSave();
   };
 
   private handleOffline = () => this.setStatus("offline");
 
   private handleBeforeUnload = (event: BeforeUnloadEvent) => {
-    if (this.hasUnsavedChanges) {
-      void this.flushSave();
-      event.preventDefault();
-    }
+    if (!this.hasUnsavedChanges) return;
+    void this.flushSave();
+    // With a local copy, unsaved edits survive and are saved on the next visit.
+    if (!this.localCache) event.preventDefault();
   };
 }

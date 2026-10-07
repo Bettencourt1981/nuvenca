@@ -1,30 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { LogOut, Menu, Search, Settings } from "lucide-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import { Link, useRouter } from "@/i18n/navigation";
 import { signOut } from "@/lib/actions/account";
+import { clearOfflineData, setUpOffline } from "@/lib/offline";
 import { Logo } from "@/components/logo";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { DropdownContent, DropdownItem, DropdownMenu, DropdownSeparator, DropdownTrigger } from "@/components/ui/dropdown";
 import { initials } from "@/lib/utils";
 import type { WorkspaceSummary } from "@/lib/types";
 import { SidebarNav } from "./sidebar-nav";
+import { NotificationBell } from "./notification-bell";
 
 export function TopBar({
   user,
   workspaces,
+  isAdmin = false,
 }: {
-  user: { email: string; fullName: string | null };
+  user: { id: string; email: string; fullName: string | null };
   workspaces: WorkspaceSummary[];
+  isAdmin?: boolean;
 }) {
   const t = useTranslations("nav");
   const auth = useTranslations("auth");
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => {
+    void setUpOffline(user.id);
+  }, [user.id]);
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border bg-surface px-2 sm:gap-4 sm:px-4">
@@ -43,7 +50,7 @@ export function TopBar({
             </DialogPrimitive.Title>
             <DialogPrimitive.Description className="sr-only">{t("openMenu")}</DialogPrimitive.Description>
             <div className="h-[calc(100%-4rem)]">
-              <SidebarNav workspaces={workspaces} onNavigate={() => setMenuOpen(false)} />
+              <SidebarNav workspaces={workspaces} isAdmin={isAdmin} onNavigate={() => setMenuOpen(false)} />
             </div>
           </DialogPrimitive.Content>
         </DialogPrimitive.Portal>
@@ -55,9 +62,11 @@ export function TopBar({
 
       <SearchBox placeholder={t("searchPlaceholder")} />
 
+      <NotificationBell userId={user.id} />
+
       <DropdownMenu>
         <DropdownTrigger
-          className="ml-auto flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground hover:opacity-90"
+          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground hover:opacity-90"
           aria-label={t("account")}
         >
           {initials(user.fullName ?? user.email)}
@@ -75,7 +84,14 @@ export function TopBar({
             <LanguageSwitcher persist />
           </div>
           <DropdownSeparator />
-          <DropdownItem icon={<LogOut />} onSelect={() => void signOut()}>
+          <DropdownItem
+            icon={<LogOut />}
+            onSelect={async () => {
+              // Offline copies of documents don't outlive the session.
+              await clearOfflineData();
+              await signOut();
+            }}
+          >
             {auth("signOut")}
           </DropdownItem>
         </DropdownContent>

@@ -8,6 +8,18 @@ import { siteUrl } from "@/lib/env";
 import { errorCode, fail, ok, type ActionResult } from "@/lib/errors";
 import { emailConfigured, sendEmail } from "@/lib/email/mailer";
 import { memberAddedEmail } from "@/lib/email/templates";
+import { syncSeats } from "@/lib/billing/stripe";
+
+/** Per-seat plans follow the team's size (after the response, best effort). */
+function syncSeatsLater(workspaceId: string) {
+  after(async () => {
+    try {
+      await syncSeats(workspaceId);
+    } catch (error) {
+      console.error("Seat sync failed", error instanceof Error ? error.message : error);
+    }
+  });
+}
 import type { WorkspaceRole } from "@/lib/types";
 
 const id = z.string().uuid();
@@ -98,6 +110,7 @@ export async function addMember(input: {
       });
     }
   }
+  syncSeatsLater(parsed.data.workspaceId);
   return ok(undefined);
 }
 
@@ -127,6 +140,7 @@ export async function removeMember(input: { workspaceId: string; userId: string 
     p_user_id: parsed.data.userId,
   });
   if (error) return fail(errorCode(error));
+  syncSeatsLater(parsed.data.workspaceId);
   refresh();
   return ok(undefined);
 }

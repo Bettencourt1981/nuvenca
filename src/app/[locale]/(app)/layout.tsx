@@ -1,5 +1,7 @@
 import { Suspense } from "react";
 import { getProfile, getWorkspaces } from "@/lib/data/drive";
+import { getCurrentUser } from "@/lib/auth";
+import { isPlatformAdmin } from "@/lib/admin";
 import { TopBar } from "@/components/app/top-bar";
 import { SidebarNav } from "@/components/app/sidebar-nav";
 import { UploadProvider } from "@/components/drive/upload-provider";
@@ -26,12 +28,19 @@ export default function AppLayout({ children }: LayoutProps<"/[locale]">) {
 }
 
 async function AppTopBar() {
-  const [profile, workspaces] = await Promise.all([getProfile(), getWorkspaces()]);
-  return <TopBar user={{ email: profile.email, fullName: profile.fullName }} workspaces={workspaces} />;
+  const [profile, workspaces, user] = await Promise.all([getProfile(), getWorkspaces(), getCurrentUser()]);
+  return (
+    <TopBar
+      user={{ id: profile.id, email: profile.email, fullName: profile.fullName }}
+      workspaces={workspaces}
+      isAdmin={isPlatformAdmin(user?.email)}
+    />
+  );
 }
 
 async function AppSidebar() {
-  return <SidebarNav workspaces={await getWorkspaces()} />;
+  const [workspaces, user] = await Promise.all([getWorkspaces(), getCurrentUser()]);
+  return <SidebarNav workspaces={workspaces} isAdmin={isPlatformAdmin(user?.email)} />;
 }
 
 function TopBarFallback() {

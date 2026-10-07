@@ -3,23 +3,25 @@
 ## Overview
 
 ```
-                ┌──────────────────────────── Vercel (fra1) ────────────────────────────┐
+                ┌──────────────────────────── Vercel (dub1) ────────────────────────────┐
  Browser ──────▶│ Next.js 16: pages, Server Actions, route handlers, proxy (auth + i18n)│
    │            └───────────────┬───────────────────────────────────────────────────────┘
-   │                            │ user session (RLS) / secret key (signing URLs only)
+   │                            │ user session (RLS) / secret key (server-side, after checks)
    │                            ▼
-   │            ┌──────────────── Supabase (eu-central-1) ───────────────┐
+   │            ┌──────────────── Supabase (eu-west-1) ──────────────────┐
    └──────────▶ │ Auth · Postgres (RLS + functions) · Storage (private)  │
-  signed URLs   │ Realtime (private channels: live edits, cursors)       │
+  signed URLs   │ Realtime (private channels: edits, cursors, the bell)  │
   + websocket   └─────────────────────────────────────────────────────────┘
    │
    └─ optional, straight from the browser: Google Picker + Drive API (drive.file scope)
       optional, from Vercel: any SMTP provider for notification emails
+      optional, from Vercel: Stripe (Checkout, customer portal, signed webhooks)
 ```
 
 Only Vercel and Supabase are required. The editors run in the browser and use no third-party
-editor server, licence or branding. Google Drive and email are optional add-ons that switch on
-when their settings are present.
+editor server, licence or branding. Google Drive, email and Stripe are optional add-ons that
+switch on when their settings are present. Vercel's functions run in the region next to the
+Supabase project (`dub1` for eu-west-1), because a page makes several database calls.
 
 - **The bytes never pass through Vercel.**
   - Uploads: the server checks permissions and quota, then hands the browser a signed upload URL,
@@ -33,7 +35,8 @@ when their settings are present.
   - The secret key is only used on the server, after a permission check. It signs storage URLs,
     resolves public links (including reading a shared document's content), merges document
     edits (`compact_document` can only be run with the secret key), reads uploads to index their
-    text, and prunes the email log.
+    text, prunes the email, activity and notification logs, applies Stripe subscriptions, and
+    serves the admin console (after checking the admin's email).
 
 ## Data model (`supabase/migrations`)
 
@@ -74,17 +77,27 @@ The level is the highest of two sources: workspace membership, and any share on 
 its folders. Shares are inherited downwards. The pgTAP tests in `supabase/tests` cover isolation,
 inheritance, invitations sent before sign-up, quotas, trash and team roles.
 
-## Plans and billing readiness
+## Plans and billing (stage 4)
 
 - Every workspace has a `plan_id`. Limits are read from `plans`, so changing a limit or adding a
-  plan is a data change, not a code change.
-- Beta defaults: 5 GB per workspace, 100 MB per file, 5 members per team, and 30 days in the trash.
-- **Adding Stripe later:**
-  1. Create Checkout and Portal sessions for a workspace.
-  2. Handle Stripe webhooks in a route handler that upserts `subscriptions`.
-  3. In the same handler, set `workspaces.plan_id`.
-
-  Quota enforcement already reads the plan.
+  plan is a data change, not a code change. The admin console edits them.
+- `plans.features` holds the rest: `for` (`personal` or `team`), `per_seat`,
+  `version_history_days` and `audit_log_days`.
+- Defaults: Free has 5 GB per workspace, 100 MB per file and 5 members per team. Pro and Business
+  exist but aren't offered until they get a price and are marked public.
+- **Checkout** (`startCheckout`): only the owner, only a public priced plan for this kind of
+  workspace, and not when a subscription already exists. The Stripe price is found by lookup key
+  (`nuvenca_<plan>_<interval>`), so prices can change in Stripe without a deploy. The Stripe
+  customer is recorded in `billing_customers`, which no client can read. Per-seat plans start
+  with the member count.
+- **Webhooks** (`/api/billing/webhook`): the signature is verified, then the subscription is
+  fetched again from Stripe (events can arrive late or out of order) and applied with
+  `apply_subscription`. Active, trialing and past-due keep the paid plan; anything else returns
+  the workspace to Free. A failure answers 500 so Stripe retries.
+- **Seats:** adding or removing a team member updates the subscription quantity after the
+  response, with proration.
+- `subscriptions` can be read by owners and admins, but only the columns the UI needs (not the
+  Stripe ids).
 
 ## Internationalisation
 
@@ -156,7 +169,7 @@ Nuvenca's documents and spreadsheets are its own, built on permissively licensed
 | Word import | Keeps structure (headings, lists, tables, bold and italic, images), not the exact page layout. |
 | Excel files | Common chart types go both ways. Pivot tables, macros, conditional formatting, images in sheets, and charts that plot another sheet's data are not imported. |
 | Google files | Docs and Sheets are converted through Word/Excel, so the same limits apply. Google's export limit is 10 MB. |
-| Offline | Editing needs a connection. Short drops are handled: edits are kept and saved on reconnect. |
+| Offline | Only documents and pages opened before on the device work offline. Uploads, sharing, search and the file list need a connection. |
 | Search | No OCR for scanned PDFs. Uploads over 25 MB are found by name only. The first 200,000 characters of each file are indexed. |
 | Size | Sheets go up to 100,000 rows and 702 columns (A to ZZ). Only the visible cells are drawn. Imports stop at 250,000 cells. |
 
@@ -210,6 +223,51 @@ servers never see Google credentials.
 3. **Save to Google Drive.** The editor downloads its own Word/Excel export and uploads it to
    Drive (multipart) with a Google Docs/Sheets MIME type, so Google converts it.
 
+## Activity log (stage 4)
+
+- `audit_events` is filled by **triggers** on files, shares, share links, team members and
+  workspaces, so every way of changing data is covered, including the server's own jobs. The
+  actor is `auth.uid()`, or the admin recorded in the `nuvenca.actor_id` setting for changes made
+  from the admin console. Names are copied into the event, so the log still reads well after a
+  file or person is gone.
+- Downloads are logged by the download routes after the response (`log_file_download`), with
+  `via: link` for public links. Previews aren't logged.
+- Trashing a folder logs one event, not one per item inside. Uploads are logged when they finish.
+- RLS: team owners and admins read their team's events; everyone reads their own drive's.
+- Retention follows the plan (`audit_log_days`); the daily cleanup job prunes older events.
+
+## In-app notifications (stage 4)
+
+- `notifications` rows are written by triggers: a new share (or an invite that becomes an account),
+  being added to a team, and comments (to the file's owner and the people in the thread who can
+  still open it). Nobody is notified of their own actions.
+- The bell reads the latest 30 and listens on the private Realtime channel
+  `notifications:<user id>` for new rows. Realtime checks the channel name against the signed-in
+  user, and `postgres_changes` also applies the table's RLS (own rows only).
+- Notifications are kept 90 days.
+
+## Admin console (stage 4)
+
+- `/admin` is for the emails in `PLATFORM_ADMIN_EMAILS`, checked against the verified email of
+  the session. Everyone else gets "page not found".
+- The data comes from `admin_*` functions that only the secret key can run. Changing a
+  workspace's plan by hand records the admin in the workspace's activity log.
+
+## Offline and PWA (stage 4)
+
+- **Documents:** each editor keeps a copy of the Yjs document in IndexedDB
+  (`nuvenca-doc:<user>:<file>`, via y-indexeddb). Without a connection the editor opens from it,
+  and edits go on being stored locally.
+- **Merging back:** on reconnect, the provider loads the server state and compares it with the
+  local copy (`Y.snapshot`). What the server lacks is saved and broadcast. Yjs merges concurrent
+  edits, so nobody's work is lost.
+- **Pages:** `public/sw.js` caches the app's code (cache first) and the pages someone opens
+  (network first). A page never opened shows `offline.html`. API calls and Supabase are never
+  cached by the service worker.
+- **Privacy:** the copies belong to the signed-in user. Signing out, or another person signing in
+  on the device, deletes them.
+- The web app manifest (`src/app/manifest.ts`) makes Nuvenca installable on phones and computers.
+
 ## Roadmap
 
 | Stage | Scope | Status |
@@ -217,4 +275,5 @@ servers never see Google credentials.
 | 1 | Accounts, file manager, uploads, previews, sharing (people + links), team workspaces, quotas | **Done** |
 | 2 | Nuvenca Docs and Sheets: live co-editing, comments, version history, Word/Excel import and export | **Done** |
 | 3 | Google Drive import and "Save to Google Drive", search inside files, email notifications, charts in Excel files | **Done** |
-| 4 | Billing (Stripe), admin console, audit log, offline editing (PWA with local storage of documents), in-app notifications, OCR for scanned PDFs | Planned |
+| 4 | Billing (Stripe), admin console, activity log, offline editing (PWA with local copies of documents), in-app notifications | **Done** |
+| Next | OCR for scanned PDFs: needs a text-recognition service or a background worker, because a Vercel function or the browser is too slow for multi-page scans. Uploading and moving files while offline. | Planned |

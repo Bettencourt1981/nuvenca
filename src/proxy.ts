@@ -19,6 +19,7 @@ const PROTECTED = [
   "/file",
   "/document",
   "/spreadsheet",
+  "/admin",
 ];
 const GUEST_ONLY = ["/", "/login", "/signup"];
 

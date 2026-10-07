@@ -78,7 +78,8 @@
     "searchPlaceholder": "Pesquisar no Nuvenca",
     "openMenu": "Abrir menu",
     "account": "Conta",
-    "storageUsed": "{used} de {total} utilizados"
+    "storageUsed": "{used} de {total} utilizados",
+    "admin": "Administração"
   },
   "drive": {
     "new": "Novo",
@@ -229,7 +230,6 @@
     "plan": "Plano",
     "planName": "Plano {plan}",
     "maxFileSize": "Tamanho máximo por ficheiro: {size}",
-    "betaNotice": "O Nuvenca está em versão beta. Os planos pagos ficarão disponíveis mais tarde.",
     "workspace": "Espaço de trabalho",
     "workspaces": "Espaços de equipa"
   },
@@ -282,6 +282,7 @@
     "email_not_confirmed": "Confirme o seu email antes de iniciar sessão.",
     "user_already_exists": "Já existe uma conta com este email.",
     "weak_password": "Escolha uma palavra-passe mais forte (pelo menos 8 caracteres).",
+    "pwned_password": "Esta palavra-passe apareceu numa fuga de dados noutro site. Escolha outra.",
     "over_email_send_rate_limit": "Foram enviados demasiados emails. Aguarde um momento e tente novamente.",
     "same_password": "A nova palavra-passe tem de ser diferente da anterior.",
     "notFoundTitle": "Página não encontrada",
@@ -298,7 +299,11 @@
     "google_failed": "O Google Drive não aceitou o pedido. Tente novamente.",
     "google_too_large": "Este ficheiro é demasiado grande para o Google converter (mais de 10 MB).",
     "google_unsupported": "Este tipo de ficheiro do Google não pode ser importado (por exemplo Formulários ou Sites).",
-    "import_failed": "Não foi possível importar o ficheiro."
+    "import_failed": "Não foi possível importar o ficheiro.",
+    "billing_unavailable": "Os pagamentos não estão disponíveis neste momento. Tente mais tarde.",
+    "invalid_plan": "Este plano não está disponível para esta área.",
+    "already_subscribed": "Esta área já tem uma subscrição. Use “Gerir faturação”.",
+    "offline_unavailable": "Este ficheiro não está disponível sem ligação. Abra-o uma vez com ligação para guardar uma cópia neste dispositivo."
   },
   "editor": {
     "backToDrive": "Voltar ao Nuvenca",
@@ -575,5 +580,169 @@
     "saving": "A guardar no Google Drive…",
     "saved": "Guardado no seu Google Drive.",
     "openInGoogle": "Abrir"
+  },
+  "activity": {
+    "title": "Atividade",
+    "personalTitle": "Atividade nos meus ficheiros",
+    "link": "Atividade",
+    "intro": "O que aconteceu aos ficheiros, partilhas e membros. Guardado durante {days} dias no seu plano.",
+    "filters": {
+      "all": "Tudo",
+      "files": "Ficheiros",
+      "downloads": "Transferências",
+      "sharing": "Partilhas",
+      "team": "Equipa e plano"
+    },
+    "filterLabel": "Mostrar",
+    "search": "Pesquisar por ficheiro ou pessoa",
+    "export": "Exportar CSV",
+    "loadMore": "Carregar mais",
+    "empty": "Ainda não há atividade",
+    "emptyFiltered": "Nada corresponde a estes filtros",
+    "someone": "Alguém",
+    "system": "Nuvenca",
+    "topLevel": "o nível principal",
+    "shareRoles": {
+      "viewer": "leitor",
+      "commenter": "comentador",
+      "editor": "editor"
+    },
+    "memberRoles": {
+      "owner": "proprietário",
+      "admin": "administrador",
+      "member": "membro"
+    },
+    "actions": {
+      "file_created": "{kind, select, folder {{actor} criou a pasta <t>{target}</t>} other {{actor} criou <t>{target}</t>}}",
+      "file_uploaded": "{actor} carregou <t>{target}</t>",
+      "file_renamed": "{actor} mudou o nome de “{from}” para <t>{target}</t>",
+      "file_moved": "{actor} moveu <t>{target}</t> para {to}",
+      "file_trashed": "{actor} moveu <t>{target}</t> para o lixo",
+      "file_restored": "{actor} restaurou <t>{target}</t> do lixo",
+      "file_deleted": "{automatic, select, true {<t>{target}</t> foi eliminado automaticamente depois do tempo no lixo} other {{actor} eliminou <t>{target}</t> definitivamente}}",
+      "file_downloaded": "{via, select, link {Alguém transferiu <t>{target}</t> através do link público} other {{actor} transferiu <t>{target}</t>}}",
+      "share_added": "{actor} partilhou <t>{target}</t> com {email} como {role}",
+      "share_changed": "{actor} alterou o acesso de {email} a <t>{target}</t> para {role}",
+      "share_removed": "{actor} retirou o acesso de {email} a <t>{target}</t>",
+      "link_changed": "{enabled, select, true {{actor} ativou o link público de <t>{target}</t> ({role})} other {{actor} desativou o link público de <t>{target}</t>}}",
+      "member_added": "{actor} adicionou {target} à equipa como {role}",
+      "member_role_changed": "{actor} alterou a função de {target} para {role}",
+      "member_removed": "{actor} removeu {target} da equipa",
+      "workspace_renamed": "{actor} mudou o nome da equipa de “{from}” para “{target}”",
+      "plan_changed": "{actor} mudou o plano de {from} para {to}",
+      "unknown": "{actor}: {action} <t>{target}</t>"
+    },
+    "csv": {
+      "date": "Data",
+      "person": "Pessoa",
+      "action": "Ação",
+      "item": "Item",
+      "description": "Descrição"
+    }
+  },
+  "notifications": {
+    "title": "Notificações",
+    "label": "Notificações",
+    "labelUnread": "Notificações ({count} por ler)",
+    "markAll": "Marcar tudo como lido",
+    "empty": "Não há novidades.",
+    "someone": "Alguém",
+    "unread": "Por ler",
+    "shared": "{kind, select, folder {{actor} partilhou a pasta “{subject}” consigo} other {{actor} partilhou “{subject}” consigo}}",
+    "team": "{actor} deu-lhe acesso à equipa “{subject}”",
+    "comment": "{actor} comentou em “{subject}”",
+    "reply": "{actor} respondeu em “{subject}”"
+  },
+  "billing": {
+    "title": "Plano e faturação",
+    "current": "O seu plano: {plan}",
+    "renewsOn": "Renova a {date}",
+    "endsOn": "Termina a {date}. Depois volta ao plano gratuito.",
+    "trialUntil": "Período experimental até {date}",
+    "pastDue": "O último pagamento falhou. Atualize o método de pagamento para manter o plano.",
+    "manage": "Gerir faturação",
+    "interval": "Período de faturação",
+    "monthly": "Mensal",
+    "yearly": "Anual",
+    "perMonth": "{seat, select, true {por membro / mês} other {/ mês}}",
+    "perYear": "{seat, select, true {por membro / ano} other {/ ano}}",
+    "storage": "{size} de armazenamento",
+    "fileSize": "Ficheiros até {size}",
+    "members": "Até {count} membros",
+    "history": "{days} dias de histórico de versões",
+    "upgrade": "Mudar para {plan}",
+    "taxNote": "Preços em euros. O IVA é acrescentado quando aplicável. Pode cancelar a qualquer momento.",
+    "ownerOnly": "Só o proprietário pode mudar o plano.",
+    "comingSoon": "Em breve: planos pagos com mais armazenamento.",
+    "checkoutSuccess": "Obrigado! O novo plano fica ativo dentro de momentos.",
+    "checkoutCanceled": "Pagamento cancelado. Não foi cobrado nada."
+  },
+  "admin": {
+    "title": "Administração",
+    "tabs": {
+      "overview": "Resumo",
+      "workspaces": "Áreas",
+      "users": "Pessoas",
+      "plans": "Planos"
+    },
+    "stats": {
+      "users": "Pessoas",
+      "usersNew": "{count} novas nos últimos 30 dias",
+      "active": "Ativas nos últimos 7 dias",
+      "teams": "Áreas de equipa",
+      "files": "Ficheiros",
+      "filesNative": "{count} documentos e folhas de cálculo Nuvenca",
+      "storage": "Armazenamento usado",
+      "paying": "Áreas pagas",
+      "pastDue": "{count} com pagamento em falta"
+    },
+    "signups": "Registos por dia, últimos 30 dias",
+    "signupsDay": "{date}: {count, plural, one {# registo} other {# registos}}",
+    "plansTitle": "Áreas por plano",
+    "search": "Pesquisar",
+    "searchWorkspaces": "Nome ou email do proprietário",
+    "searchUsers": "Email ou nome",
+    "columns": {
+      "name": "Nome",
+      "owner": "Proprietário",
+      "plan": "Plano",
+      "members": "Membros",
+      "storage": "Armazenamento",
+      "created": "Criada",
+      "email": "Email",
+      "lastSignIn": "Última sessão",
+      "teams": "Equipas",
+      "subscription": "Subscrição"
+    },
+    "personal": "Pessoal",
+    "team": "Equipa",
+    "never": "Nunca",
+    "unconfirmed": "Email por confirmar",
+    "results": "{count, plural, one {# resultado} other {# resultados}}",
+    "previous": "Anterior",
+    "next": "Seguinte",
+    "setPlan": "Mudar plano",
+    "planChanged": "Plano alterado",
+    "stripeWarning": "Esta área paga através do Stripe; o próximo evento de faturação repõe o plano.",
+    "plan": {
+      "save": "Guardar",
+      "saved": "Plano guardado",
+      "name": "Nome",
+      "storageGb": "Armazenamento (GB)",
+      "maxFileSizeMb": "Maior ficheiro (MB)",
+      "maxMembers": "Membros por equipa",
+      "trashDays": "Dias no lixo",
+      "historyDays": "Dias de histórico de versões",
+      "auditDays": "Dias de registo de atividade",
+      "monthly": "Preço mensal (€)",
+      "yearly": "Preço anual (€)",
+      "isPublic": "Disponível para mudança de plano pelo cliente",
+      "for": "Para",
+      "forNone": "Não disponível",
+      "forPersonal": "Ficheiros pessoais",
+      "forTeam": "Equipas",
+      "perSeat": "Preço por membro",
+      "lookupKeys": "Chaves de pesquisa de preço no Stripe: {monthly} e {yearly}"
+    }
   }
 }

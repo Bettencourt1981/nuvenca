@@ -5,7 +5,7 @@ import { STORAGE_BUCKET } from "@/lib/env";
 /**
  * Daily job (see vercel.json): deletes trash past its retention period and
  * abandoned uploads, then removes their objects from Storage. Also forgets
- * old entries of the notification email log.
+ * old entries of the email log, the activity log (per plan) and notifications.
  */
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -23,5 +23,7 @@ export async function GET(request: NextRequest) {
   }
   const { data: prunedEmails, error: pruneError } = await admin.rpc("prune_notification_log");
   if (pruneError) console.error("cleanup: failed to prune the email log", pruneError);
-  return NextResponse.json({ removedObjects: paths?.length ?? 0, prunedEmails: prunedEmails ?? 0 });
+  const { data: prunedActivity, error: activityError } = await admin.rpc("prune_activity");
+  if (activityError) console.error("cleanup: failed to prune activity and notifications", activityError);
+  return NextResponse.json({ removedObjects: paths?.length ?? 0, prunedEmails: prunedEmails ?? 0, prunedActivity });
 }

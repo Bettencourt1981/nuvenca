@@ -206,3 +206,42 @@ export const getProfile = cache(async () => {
   if (error) throw error;
   return { id: data.id, email: data.email, fullName: data.full_name, locale: data.locale };
 });
+
+export type PlanInfo = {
+  id: string;
+  name: string;
+  storageQuotaBytes: number;
+  maxFileSizeBytes: number;
+  maxMembers: number;
+  trashRetentionDays: number;
+  features: Record<string, unknown>;
+  priceMonthlyCents: number | null;
+  priceYearlyCents: number | null;
+  currency: string;
+  isPublic: boolean;
+};
+
+/** Every plan, in display order. */
+export const getPlans = cache(async (): Promise<PlanInfo[]> => {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("plans")
+    .select(
+      "id, name, storage_quota_bytes, max_file_size_bytes, max_members, trash_retention_days, features, price_monthly_cents, price_yearly_cents, currency, is_public",
+    )
+    .order("sort_order");
+  if (error) throw error;
+  return (data ?? []).map((p) => ({
+    id: p.id,
+    name: p.name,
+    storageQuotaBytes: p.storage_quota_bytes,
+    maxFileSizeBytes: p.max_file_size_bytes,
+    maxMembers: p.max_members,
+    trashRetentionDays: p.trash_retention_days,
+    features: (p.features ?? {}) as Record<string, unknown>,
+    priceMonthlyCents: p.price_monthly_cents,
+    priceYearlyCents: p.price_yearly_cents,
+    currency: p.currency,
+    isPublic: p.is_public,
+  }));
+});

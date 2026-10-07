@@ -1,13 +1,15 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
-import { ChevronRight, UsersRound } from "lucide-react";
+import { ChevronRight, History, UsersRound } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { getProfile, getWorkspaces } from "@/lib/data/drive";
 import { ListSkeleton, PageContainer, PageHeader } from "@/components/drive/views";
 import { ProfileForm } from "@/components/settings/profile-form";
 import { StorageCard } from "@/components/settings/storage-card";
 import { Section } from "@/components/settings/section";
+import { LinkRow } from "@/components/settings/link-row";
+import { PlanSection } from "@/components/settings/plan-section";
 import type { Locale } from "@/i18n/routing";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -24,11 +26,13 @@ export default function SettingsPage() {
 }
 
 async function Settings() {
-  const [profile, workspaces, t, ws, locale] = await Promise.all([
+  const [profile, workspaces, t, ws, activity, billing, locale] = await Promise.all([
     getProfile(),
     getWorkspaces(),
     getTranslations("settings"),
     getTranslations("workspace"),
+    getTranslations("activity"),
+    getTranslations("billing"),
     getLocale(),
   ]);
   const personal = workspaces.find((w) => w.kind === "personal")!;
@@ -43,7 +47,12 @@ async function Settings() {
         </Section>
         <Section title={t("storage")}>
           <StorageCard workspace={personal} />
-          <p className="mt-4 rounded-lg bg-primary-soft px-3 py-2 text-sm">{t("betaNotice")}</p>
+        </Section>
+        <Section title={billing("title")}>
+          <PlanSection workspace={personal} />
+        </Section>
+        <Section title={activity("title")}>
+          <LinkRow href="/settings/activity" icon={<History />} label={activity("personalTitle")} />
         </Section>
         {teams.length > 0 ? (
           <Section title={t("workspaces")}>

@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from "next/server";
+import { after, type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { STORAGE_BUCKET } from "@/lib/env";
@@ -23,6 +23,13 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/api/files/[f
     .maybeSingle();
   if (!file || file.kind !== "file" || file.status !== "ready") {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
+  }
+
+  // Activity log (previews aren't downloads).
+  if (!inline) {
+    after(async () => {
+      await supabase.rpc("log_file_download", { p_file_id: fileId });
+    });
   }
 
   const native = nativeType(file.mime_type);

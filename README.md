@@ -3,9 +3,10 @@
 Cloud storage with sharing, plus documents and spreadsheets that several people can edit at once,
 built on **Next.js (Vercel)** and **Supabase**. Interface in Portuguese (pt-PT) and English.
 
-> **Status: beta, stages 1 to 3 of 4 done.** The file manager, sharing, team workspaces, the
-> document and spreadsheet editors, search inside files, email notifications and Google Drive
-> import/export are working. The editors are Nuvenca's own, built only on
+> **Status: beta, stages 1 to 4 done.** The file manager, sharing, team workspaces, the
+> document and spreadsheet editors, search inside files, email and in-app notifications, Google
+> Drive import/export, the activity log, Stripe billing, the admin console and offline editing are
+> working. The editors are Nuvenca's own, built only on
 > open-source libraries with permissive licences (MIT, ISC, BSD). There is no third-party editor
 > server, licence or branding. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the design and
 > roadmap.
@@ -31,8 +32,8 @@ built on **Next.js (Vercel)** and **Supabase**. Interface in Portuguese (pt-PT) 
   start of words ("orcam" finds "Orçamento"), shows the matching passage, and only finds files
   the person can open.
 - **Team workspaces:** shared spaces for companies, with members, admins and their own storage.
-- **Plans and quotas:** storage and file-size limits are enforced per workspace. The data model is
-  ready for paid plans; there is no billing yet.
+- **Plans and quotas:** storage, file-size and member limits are enforced per workspace and come
+  from the workspace's plan (see [Billing](#billing)).
 
 ### Documents (Nuvenca Docs)
 
@@ -72,6 +73,50 @@ built on **Next.js (Vercel)** and **Supabase**. Interface in Portuguese (pt-PT) 
 - Google's scripts load only when someone opens a menu with a Google Drive option. The Google
   token stays in the browser tab.
 
+### Activity and notifications
+
+- **Activity log:** uploads, edits to the file tree (create, rename, move, trash, restore,
+  delete), downloads (including through public links), sharing and team changes, with who did
+  what and when.
+  - Team owners and admins see their team's log; everyone sees the log of their own drive
+    (Settings → Activity).
+  - Filters (files, downloads, sharing, team), search, and CSV export (up to 10,000 rows).
+  - Kept 30 days on Free and 365 days on paid plans.
+- **Notification bell:** live notifications when something is shared with you, when you're added
+  to a team, and when someone comments on your file or replies in a thread you're in. Clicking
+  one opens the file. Notifications are kept 90 days.
+
+### Billing
+
+- **Plans:** Free, Pro (personal drive) and Business (teams, charged per member). Limits and prices
+  live in the database and are edited in the admin console. A plan is offered only once it is
+  public and has a price.
+- **Stripe Checkout** for upgrades (cards and the other methods enabled in Stripe, VAT number
+  and billing address collected, promotion codes accepted), and the **Stripe customer portal**
+  for invoices, payment details, plan changes and cancellation.
+- Stripe's webhooks keep the plan in sync: renewals, failed payments, cancellations at the end of
+  the period, and seat counts when team members are added or removed. Only the workspace owner
+  can pay or manage billing.
+- Billing stays hidden until the Stripe keys are set ([step 5](#5-billing-with-stripe-optional)).
+
+### Admin console
+
+People whose email is in `PLATFORM_ADMIN_EMAILS` get an **Admin** entry in the sidebar:
+
+- **Overview:** users, active users, teams, files, storage, plans, subscriptions, and sign-ups
+  over the last 30 days.
+- **Workspaces** and **users:** search, storage use, and changing a workspace's plan by hand
+  (recorded in its activity log).
+- **Plans:** limits, prices and which plans are offered.
+
+### Offline and mobile
+
+- Nuvenca installs as an app on phones and computers (PWA).
+- Documents and spreadsheets opened on a device are kept on it. They open and can be edited
+  without a connection, and the edits are merged with everyone else's when the connection comes
+  back. Pages you opened before open offline too.
+- Signing out deletes the offline copies from the device.
+
 ### Known limits of the beta
 
 - **Word import:** keeps the structure (headings, lists, tables, bold, images) but not the exact
@@ -81,9 +126,10 @@ built on **Next.js (Vercel)** and **Supabase**. Interface in Portuguese (pt-PT) 
   formatting, images in sheets, and charts that plot another sheet's data are not imported.
 - **Google files:** Google Docs and Sheets go through Word/Excel, so the same limits apply.
   Google exports files up to 10 MB. Forms, Sites and Maps can't be imported.
-- **Offline editing:** not supported yet. The editor shows when the connection is lost and
-  catches up when it comes back.
-- **Search:** scanned PDFs (images of text) aren't searchable, because there's no OCR. Uploads
+- **Offline:** only documents and pages already opened on the device work offline. Uploads,
+  sharing, search and the file list need a connection.
+- **Search:** scanned PDFs (images of text) aren't searchable, because there's no OCR yet (see the
+  roadmap in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)). Uploads
   larger than 25 MB are found by name only, and only the first 200,000 characters of a file are
   indexed.
 - **Sorting:** sorts the selected range. Comments attached to sorted cells stay where they were.
@@ -113,7 +159,7 @@ set `SMTP_HOST=127.0.0.1`, `SMTP_PORT=54325` and `EMAIL_FROM=Nuvenca <no-reply@l
 | --- | --- |
 | `npm run check` | Translation key check, lint, TypeScript and unit tests |
 | `npm test` | Unit tests: spreadsheet engine, Excel charts, search text extraction, email templates (Vitest) |
-| `npm run db:test` | Database permission tests (pgTAP) |
+| `npm run db:test` | Database tests (pgTAP): permissions, sharing, documents, search, notifications, activity, billing |
 | `npm run db:reset` | Rebuild the local database from `supabase/migrations` |
 | `npm run db:types` | Regenerate `src/lib/supabase/database.types.ts` after a schema change |
 
@@ -121,17 +167,20 @@ set `SMTP_HOST=127.0.0.1`, `SMTP_PORT=54325` and `EMAIL_FROM=Nuvenca <no-reply@l
 
 ### 1. Supabase
 
-1. **Create a project** in the **Frankfurt (eu-central-1)** region. That keeps data in the EU and
-   next to Vercel's `fra1` region. Use the **Pro plan** for production. It brings daily backups,
-   no pausing when idle, and uploads larger than 50 MB.
+1. **Create a project** in an EU region, for example **Ireland (eu-west-1)** or **Frankfurt
+   (eu-central-1)**. Use the **Pro plan** for production. It brings daily backups, no pausing
+   when idle, uploads larger than 50 MB, and leaked-password protection. Run the Vercel functions
+   in the same area: `vercel.json` uses `dub1` (Dublin), next to eu-west-1; change it to `fra1`
+   for eu-central-1.
 2. **Apply the database schema** from your computer:
    ```bash
    npx supabase login
    npx supabase link --project-ref <your-project-ref>
    npx supabase db push
    ```
-3. **Storage → Settings:** set the upload file size limit to at least **100 MB**. That is the beta
-   plan's per-file limit.
+3. **Storage → Settings:** set the upload file size limit to the largest per-file limit of your
+   plans: **5 GB** with the default Business plan. Each plan's own limit is checked before
+   every upload.
 4. **Realtime → Settings:** turn off **Allow public access**. The editors only use private
    channels, which check that each person has access to the file.
 5. **Authentication → URL Configuration:**
@@ -140,8 +189,15 @@ set `SMTP_HOST=127.0.0.1`, `SMTP_PORT=54325` and `EMAIL_FROM=Nuvenca <no-reply@l
      (the second one covers preview deployments)
 6. **Authentication → Emails → SMTP:** connect a real email provider, for example Resend, Brevo or
    Amazon SES (EU). Supabase's built-in sender is only meant for testing and is heavily
-   rate-limited, so confirmation and reset emails would not reach beta users reliably.
-7. **Google sign-in** (optional):
+   rate-limited (2 emails an hour), so confirmation and reset emails would not reach beta users
+   reliably.
+7. **Authentication → Emails → Templates:** for *Confirm sign up*, *Reset password* and *Change
+   email address*, paste the files from `supabase/templates/` and the subjects from
+   `supabase/config.toml`. The emails are in Portuguese, or in English for accounts created in
+   English.
+8. **Authentication → Sign In / Providers → Email:** minimum password length **8** (the app asks
+   for 8), and turn on **leaked password protection** (Pro plan).
+9. **Google sign-in** (optional):
    1. In Google Cloud Console, create an OAuth client of type *Web application*.
    2. Add `https://<project-ref>.supabase.co/auth/v1/callback` as an authorised redirect URI.
    3. Paste the client ID and secret into **Authentication → Providers → Google**.
@@ -161,9 +217,11 @@ set `SMTP_HOST=127.0.0.1`, `SMTP_PORT=54325` and `EMAIL_FROM=Nuvenca <no-reply@l
    | `CRON_SECRET` | A long random string. Protects the daily cleanup job. |
    | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAIL_FROM` | Optional: email notifications (step 3). |
    | `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `NEXT_PUBLIC_GOOGLE_API_KEY`, `NEXT_PUBLIC_GOOGLE_APP_ID` | Optional: Google Drive import and export (step 4). |
+   | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_AUTOMATIC_TAX` | Optional: billing (step 5). |
+   | `PLATFORM_ADMIN_EMAILS` | Comma-separated emails of the people who run Nuvenca. They get the admin console at `/admin`. |
 
 3. Deploy. `vercel.json` already does two things:
-   - pins server functions to Frankfurt (`fra1`);
+   - pins server functions to Dublin (`dub1`), next to the Supabase project (see step 1.1);
    - schedules the daily cleanup of expired trash.
 
 ### 3. Email notifications (optional)
@@ -196,6 +254,28 @@ most 30 notification emails an hour and 100 a day, which stops the feature being
 
 Without these settings, the Google Drive menu items are hidden.
 
+### 5. Billing with Stripe (optional)
+
+1. **Products and prices.** In Stripe, create a product per paid plan, with a recurring price per
+   interval. Give each price a **lookup key**: `nuvenca_<plan>_<monthly|yearly>`, for example
+   `nuvenca_pro_monthly`, `nuvenca_pro_yearly` and `nuvenca_business_monthly`. Business prices
+   are per member (Nuvenca sets the quantity to the team's size).
+2. **Webhook.** Add an endpoint `https://<your-domain>/api/billing/webhook` with these events:
+   `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
+   `checkout.session.async_payment_failed`, `customer.subscription.created`,
+   `customer.subscription.updated`, `customer.subscription.deleted`,
+   `customer.subscription.paused`, `customer.subscription.resumed`, `invoice.paid` and
+   `invoice.payment_failed`.
+3. **Customer portal.** Turn it on in Stripe (Settings → Billing → Customer portal), and allow
+   cancellations, payment method updates and invoice history.
+4. **Payment methods and VAT.** Enable the payment methods you want in Stripe; Checkout only shows
+   those that work for subscriptions. Checkout collects the billing address and VAT number (NIF).
+   To have Stripe Tax calculate VAT, set it up in Stripe and set `STRIPE_AUTOMATIC_TAX=true`.
+5. **Vercel.** Set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` (the endpoint's signing
+   secret), then redeploy.
+6. **Offer the plans.** In the admin console (**Admin → Plans**), set each plan's prices (they're
+   shown to customers, so match Stripe's) and tick **Offered**.
+
 ## Project structure
 
 ```
@@ -205,8 +285,8 @@ src/
     (app)/             The signed-in app: drive, shared, recent, starred, trash, settings…
     s/[token]/         Public share links
     (editor)/          Full-screen editors: document/[fileId], spreadsheet/[fileId]
-  app/api/             Auth callback, downloads (signed URLs, Word/Excel export), cleanup cron
-  components/          UI (drive browser, dialogs, upload manager, settings)
+  app/api/             Auth callback, downloads, activity CSV, Stripe webhook, cleanup cron
+  components/          UI (drive browser, dialogs, upload manager, settings, activity, admin)
     editors/           Document editor (Tiptap) and spreadsheet editor (grid, toolbar, charts)
     google/            "Import from Google Drive" and "Save to Google Drive"
   lib/actions/         Server Actions (all writes)
@@ -214,10 +294,15 @@ src/
   lib/editors/sheets/  Spreadsheet model, formula engine, Excel import/export (with charts)
   lib/email/           SMTP sending and the notification email templates (pt/en)
   lib/google/          Google Identity, Picker and Drive API calls (browser only)
+  lib/billing/         Stripe client, subscription and seat sync
+  lib/offline.ts       Service worker registration and clearing offline copies
   lib/data/            Server-side reads
   messages/            Translations (en.json, pt.json; keys must match)
   proxy.ts             Session refresh, language detection, route protection
 supabase/
   migrations/          Database schema, permissions and functions
-  tests/               pgTAP tests for permissions, sharing, documents, search and notifications
+  templates/           Supabase Auth emails (pt/en)
+  tests/               pgTAP tests for permissions, sharing, documents, search, notifications, activity and billing
+public/
+  sw.js, offline.html  Service worker and the offline page
 ```

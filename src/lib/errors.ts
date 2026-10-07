@@ -29,6 +29,7 @@ const KNOWN = new Set([
   "email_not_confirmed",
   "user_already_exists",
   "weak_password",
+  "pwned_password",
   "over_email_send_rate_limit",
   "same_password",
   "not_native",
@@ -42,7 +43,9 @@ const KNOWN = new Set([
 /** Map a Supabase/PostgREST/Auth error to a translatable error code. */
 export function errorCode(error: unknown): string {
   if (!error || typeof error !== "object") return "generic";
-  const { message, code } = error as { message?: string; code?: string };
+  const { message, code, reasons } = error as { message?: string; code?: string; reasons?: string[] };
+  // Supabase Auth's leaked-password check (Have I Been Pwned).
+  if (code === "weak_password" && reasons?.includes("pwned")) return "pwned_password";
   if (code && KNOWN.has(code)) return code;
   if (message && KNOWN.has(message)) return message;
   if (code === "42501") return "forbidden";

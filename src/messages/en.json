@@ -78,7 +78,8 @@
     "searchPlaceholder": "Search in Nuvenca",
     "openMenu": "Open menu",
     "account": "Account",
-    "storageUsed": "{used} of {total} used"
+    "storageUsed": "{used} of {total} used",
+    "admin": "Admin"
   },
   "drive": {
     "new": "New",
@@ -229,7 +230,6 @@
     "plan": "Plan",
     "planName": "{plan} plan",
     "maxFileSize": "Maximum file size: {size}",
-    "betaNotice": "Nuvenca is in beta. Paid plans will be available later.",
     "workspace": "Workspace",
     "workspaces": "Team workspaces"
   },
@@ -282,6 +282,7 @@
     "email_not_confirmed": "Please confirm your email before signing in.",
     "user_already_exists": "An account with this email already exists.",
     "weak_password": "Please choose a stronger password (at least 8 characters).",
+    "pwned_password": "This password has appeared in a data breach on another site. Please choose a different one.",
     "over_email_send_rate_limit": "Too many emails sent. Please wait a moment and try again.",
     "same_password": "Your new password must be different from the old one.",
     "notFoundTitle": "Page not found",
@@ -298,7 +299,11 @@
     "google_failed": "Google Drive didn't accept the request. Try again.",
     "google_too_large": "This file is too large for Google to convert (over 10 MB).",
     "google_unsupported": "This kind of Google file can't be imported (for example Forms or Sites).",
-    "import_failed": "The file couldn't be imported."
+    "import_failed": "The file couldn't be imported.",
+    "billing_unavailable": "Payments aren't available right now. Try again later.",
+    "invalid_plan": "This plan isn't available for this workspace.",
+    "already_subscribed": "This workspace already has a subscription. Use “Manage billing”.",
+    "offline_unavailable": "This file isn't available offline. Open it once while you're online to keep a copy on this device."
   },
   "editor": {
     "backToDrive": "Back to Nuvenca",
@@ -575,5 +580,169 @@
     "saving": "Saving to Google Drive…",
     "saved": "Saved to your Google Drive.",
     "openInGoogle": "Open"
+  },
+  "activity": {
+    "title": "Activity",
+    "personalTitle": "Activity in my files",
+    "link": "Activity",
+    "intro": "What happened to files, sharing and members here. Kept for {days} days on your plan.",
+    "filters": {
+      "all": "Everything",
+      "files": "Files",
+      "downloads": "Downloads",
+      "sharing": "Sharing",
+      "team": "Team and plan"
+    },
+    "filterLabel": "Show",
+    "search": "Search by file or person",
+    "export": "Export CSV",
+    "loadMore": "Load more",
+    "empty": "No activity yet",
+    "emptyFiltered": "Nothing matches these filters",
+    "someone": "Someone",
+    "system": "Nuvenca",
+    "topLevel": "the top level",
+    "shareRoles": {
+      "viewer": "viewer",
+      "commenter": "commenter",
+      "editor": "editor"
+    },
+    "memberRoles": {
+      "owner": "owner",
+      "admin": "admin",
+      "member": "member"
+    },
+    "actions": {
+      "file_created": "{kind, select, folder {{actor} created the folder <t>{target}</t>} other {{actor} created <t>{target}</t>}}",
+      "file_uploaded": "{actor} uploaded <t>{target}</t>",
+      "file_renamed": "{actor} renamed “{from}” to <t>{target}</t>",
+      "file_moved": "{actor} moved <t>{target}</t> to {to}",
+      "file_trashed": "{actor} moved <t>{target}</t> to the trash",
+      "file_restored": "{actor} restored <t>{target}</t> from the trash",
+      "file_deleted": "{automatic, select, true {<t>{target}</t> was deleted automatically after its time in the trash} other {{actor} permanently deleted <t>{target}</t>}}",
+      "file_downloaded": "{via, select, link {Someone downloaded <t>{target}</t> through its public link} other {{actor} downloaded <t>{target}</t>}}",
+      "share_added": "{actor} shared <t>{target}</t> with {email} as {role}",
+      "share_changed": "{actor} changed {email}'s access to <t>{target}</t> to {role}",
+      "share_removed": "{actor} removed {email}'s access to <t>{target}</t>",
+      "link_changed": "{enabled, select, true {{actor} turned on the public link to <t>{target}</t> ({role})} other {{actor} turned off the public link to <t>{target}</t>}}",
+      "member_added": "{actor} added {target} to the team as {role}",
+      "member_role_changed": "{actor} changed {target}'s role to {role}",
+      "member_removed": "{actor} removed {target} from the team",
+      "workspace_renamed": "{actor} renamed the team from “{from}” to “{target}”",
+      "plan_changed": "{actor} changed the plan from {from} to {to}",
+      "unknown": "{actor}: {action} <t>{target}</t>"
+    },
+    "csv": {
+      "date": "Date",
+      "person": "Person",
+      "action": "Action",
+      "item": "Item",
+      "description": "Description"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "label": "Notifications",
+    "labelUnread": "Notifications ({count} unread)",
+    "markAll": "Mark all as read",
+    "empty": "You're all caught up.",
+    "someone": "Someone",
+    "unread": "Unread",
+    "shared": "{kind, select, folder {{actor} shared the folder “{subject}” with you} other {{actor} shared “{subject}” with you}}",
+    "team": "{actor} added you to the team “{subject}”",
+    "comment": "{actor} commented on “{subject}”",
+    "reply": "{actor} replied in “{subject}”"
+  },
+  "billing": {
+    "title": "Plan and billing",
+    "current": "Your plan: {plan}",
+    "renewsOn": "Renews on {date}",
+    "endsOn": "Ends on {date}. You'll go back to the free plan afterwards.",
+    "trialUntil": "Free trial until {date}",
+    "pastDue": "The last payment failed. Update your payment method to keep your plan.",
+    "manage": "Manage billing",
+    "interval": "Billing period",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "perMonth": "{seat, select, true {per member / month} other {/ month}}",
+    "perYear": "{seat, select, true {per member / year} other {/ year}}",
+    "storage": "{size} of storage",
+    "fileSize": "Files up to {size}",
+    "members": "Up to {count} members",
+    "history": "{days} days of version history",
+    "upgrade": "Upgrade to {plan}",
+    "taxNote": "Prices in euros. VAT is added where it applies. Cancel at any time.",
+    "ownerOnly": "Only the owner can change the plan.",
+    "comingSoon": "Paid plans with more storage are coming soon.",
+    "checkoutSuccess": "Thank you! Your new plan will be active in a moment.",
+    "checkoutCanceled": "Checkout canceled. Nothing was charged."
+  },
+  "admin": {
+    "title": "Admin",
+    "tabs": {
+      "overview": "Overview",
+      "workspaces": "Workspaces",
+      "users": "Users",
+      "plans": "Plans"
+    },
+    "stats": {
+      "users": "People",
+      "usersNew": "{count} new in the last 30 days",
+      "active": "Active in the last 7 days",
+      "teams": "Team workspaces",
+      "files": "Files",
+      "filesNative": "{count} Nuvenca documents and spreadsheets",
+      "storage": "Storage used",
+      "paying": "Paying workspaces",
+      "pastDue": "{count} with a failed payment"
+    },
+    "signups": "Sign-ups per day, last 30 days",
+    "signupsDay": "{date}: {count, plural, one {# sign-up} other {# sign-ups}}",
+    "plansTitle": "Workspaces by plan",
+    "search": "Search",
+    "searchWorkspaces": "Name or owner's email",
+    "searchUsers": "Email or name",
+    "columns": {
+      "name": "Name",
+      "owner": "Owner",
+      "plan": "Plan",
+      "members": "Members",
+      "storage": "Storage",
+      "created": "Created",
+      "email": "Email",
+      "lastSignIn": "Last sign-in",
+      "teams": "Teams",
+      "subscription": "Subscription"
+    },
+    "personal": "Personal",
+    "team": "Team",
+    "never": "Never",
+    "unconfirmed": "Email not confirmed",
+    "results": "{count, plural, one {# result} other {# results}}",
+    "previous": "Previous",
+    "next": "Next",
+    "setPlan": "Change plan",
+    "planChanged": "Plan changed",
+    "stripeWarning": "This workspace pays through Stripe; its next billing event will reset the plan.",
+    "plan": {
+      "save": "Save",
+      "saved": "Plan saved",
+      "name": "Name",
+      "storageGb": "Storage (GB)",
+      "maxFileSizeMb": "Largest file (MB)",
+      "maxMembers": "Members per team",
+      "trashDays": "Days in the trash",
+      "historyDays": "Days of version history",
+      "auditDays": "Days of activity log",
+      "monthly": "Monthly price (€)",
+      "yearly": "Yearly price (€)",
+      "isPublic": "Offer for self-service upgrade",
+      "for": "For",
+      "forNone": "Not offered",
+      "forPersonal": "Personal drives",
+      "forTeam": "Teams",
+      "perSeat": "Price per member",
+      "lookupKeys": "Stripe price lookup keys: {monthly} and {yearly}"
+    }
   }
 }

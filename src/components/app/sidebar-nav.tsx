@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Clock, HardDrive, Plus, Star, Trash2, Users, UsersRound } from "lucide-react";
+import { Clock, HardDrive, Plus, ShieldCheck, Star, Trash2, Users, UsersRound } from "lucide-react";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { createTeamWorkspace } from "@/lib/actions/workspace";
 import { useErrorMessage } from "@/hooks/use-error-message";
@@ -14,9 +14,12 @@ import type { WorkspaceSummary } from "@/lib/types";
 export function SidebarNav({
   workspaces,
   onNavigate,
+  isAdmin = false,
 }: {
   workspaces: WorkspaceSummary[];
   onNavigate?: () => void;
+  /** Platform admins also see the admin console. */
+  isAdmin?: boolean;
 }) {
   const t = useTranslations("nav");
   const ws = useTranslations("workspace");
@@ -42,6 +45,7 @@ export function SidebarNav({
     { href: "/recent", label: t("recent"), icon: Clock },
     { href: "/starred", label: t("starred"), icon: Star },
     { href: "/trash", label: t("trash"), icon: Trash2 },
+    ...(isAdmin ? [{ href: "/admin", label: t("admin"), icon: ShieldCheck }] : []),
   ];
 
   const usage = personal ? Math.min(1, personal.storageUsedBytes / Math.max(1, personal.storageQuotaBytes)) : 0;
