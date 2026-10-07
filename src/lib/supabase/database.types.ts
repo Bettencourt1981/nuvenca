@@ -39,6 +39,12 @@ export type Database = {
       foreignKeyName: "file_shares_file_id_fkey"
       columns: ["file_id"]
 isOneToOne: false
+      referencedRelation: "drive_items"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "file_shares_file_id_fkey"
+      columns: ["file_id"]
+isOneToOne: false
       referencedRelation: "files"
       referencedColumns: ["id"]
     }
@@ -59,6 +65,12 @@ isOneToOne: false
       foreignKeyName: "file_stars_file_id_fkey"
       columns: ["file_id"]
 isOneToOne: false
+      referencedRelation: "drive_items"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "file_stars_file_id_fkey"
+      columns: ["file_id"]
+isOneToOne: false
       referencedRelation: "files"
       referencedColumns: ["id"]
     }
@@ -76,6 +88,12 @@ isOneToOne: false
                   }
                   Relationships: [
                     {
+      foreignKeyName: "file_versions_file_id_fkey"
+      columns: ["file_id"]
+isOneToOne: false
+      referencedRelation: "drive_items"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "file_versions_file_id_fkey"
       columns: ["file_id"]
 isOneToOne: false
@@ -106,6 +124,12 @@ isOneToOne: false
       columns: ["current_version_id"]
 isOneToOne: false
       referencedRelation: "file_versions"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "files_parent_id_fkey"
+      columns: ["parent_id"]
+isOneToOne: false
+      referencedRelation: "drive_items"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "files_parent_id_fkey"
@@ -162,6 +186,12 @@ isOneToOne: false
                   }
                   Relationships: [
                     {
+      foreignKeyName: "share_links_file_id_fkey"
+      columns: ["file_id"]
+isOneToOne: true
+      referencedRelation: "drive_items"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "share_links_file_id_fkey"
       columns: ["file_id"]
 isOneToOne: true
@@ -238,7 +268,39 @@ isOneToOne: false
                 }
           }
           Views: {
-            [_ in never]: never
+            "drive_items": {
+                  Row: {
+                    "access_level": number | null,"ancestor_ids": (string)[] | null,"created_at": string | null,"created_by": string | null,"id": string | null,"in_trash": boolean | null,"kind": Database["public"]['Enums']["file_kind"] | null,"mime_type": string | null,"name": string | null,"owner_name": string | null,"parent_id": string | null,"size_bytes": number | null,"starred": boolean | null,"status": Database["public"]['Enums']["file_status"] | null,"trashed_at": string | null,"updated_at": string | null,"workspace_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                           "access_level"?: never,"ancestor_ids"?: (string)[] | null,"created_at"?: string | null,"created_by"?: string | null,"id"?: string | null,"in_trash"?: boolean | null,"kind"?: Database["public"]['Enums']["file_kind"] | null,"mime_type"?: string | null,"name"?: string | null,"owner_name"?: never,"parent_id"?: string | null,"size_bytes"?: number | null,"starred"?: never,"status"?: Database["public"]['Enums']["file_status"] | null,"trashed_at"?: string | null,"updated_at"?: string | null,"workspace_id"?: string | null
+                         }
+                        Update: {
+                           "access_level"?: never,"ancestor_ids"?: (string)[] | null,"created_at"?: string | null,"created_by"?: string | null,"id"?: string | null,"in_trash"?: boolean | null,"kind"?: Database["public"]['Enums']["file_kind"] | null,"mime_type"?: string | null,"name"?: string | null,"owner_name"?: never,"parent_id"?: string | null,"size_bytes"?: number | null,"starred"?: never,"status"?: Database["public"]['Enums']["file_status"] | null,"trashed_at"?: string | null,"updated_at"?: string | null,"workspace_id"?: string | null
+                         }
+                        Relationships: [
+                    {
+      foreignKeyName: "files_parent_id_fkey"
+      columns: ["parent_id"]
+isOneToOne: false
+      referencedRelation: "drive_items"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "files_parent_id_fkey"
+      columns: ["parent_id"]
+isOneToOne: false
+      referencedRelation: "files"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "files_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                }
           }
           Functions: {
             "add_workspace_member":
@@ -395,6 +457,9 @@ isOneToOne: false
                            },
 "move_files":
 { Args: { "p_file_ids": (string)[],"p_target_parent_id": string }; Returns: number
+                           },
+"profile_display_name":
+{ Args: { "p_user_id": string }; Returns: string
                            },
 "purge_expired_items":
 { Args: Record<PropertyKey, never>; Returns: (string)[]

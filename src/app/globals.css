@@ -1,26 +1,75 @@
 @import "tailwindcss";
 
+/* Design tokens. Components use the semantic names (bg-surface, text-muted…),
+   so light and dark themes only differ here. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --background: #f7f8fb;
+  --surface: #ffffff;
+  --surface-muted: #f0f2f7;
+  --surface-hover: #e9edf5;
+  --border: #e1e5ee;
+  --foreground: #172033;
+  --muted: #5d6a82;
+  --primary: #2563eb;
+  --primary-hover: #1d4fd8;
+  --primary-soft: #e3ecff;
+  --primary-foreground: #ffffff;
+  --danger: #d92d20;
+  --danger-soft: #fdecea;
+  --success: #12805c;
+  --ring: #93b4ff;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0f1420;
+    --surface: #161c2b;
+    --surface-muted: #1c2335;
+    --surface-hover: #242d43;
+    --border: #2a3349;
+    --foreground: #e6eaf3;
+    --muted: #97a3bb;
+    --primary: #6b9bff;
+    --primary-hover: #87aeff;
+    --primary-soft: #1d2b4d;
+    --primary-foreground: #0b1222;
+    --danger: #ff6b5e;
+    --danger-soft: #3a1f1f;
+    --success: #4cc29a;
+    --ring: #3d5fa8;
   }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-success: var(--success);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+html {
+  color-scheme: light dark;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
