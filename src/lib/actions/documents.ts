@@ -10,6 +10,7 @@ import { STORAGE_BUCKET } from "@/lib/env";
 import { errorCode, fail, ok, type ActionResult } from "@/lib/errors";
 import { fromBase64, toBase64 } from "@/lib/collab/base64";
 import { EMPTY_YJS_STATE_BASE64, importableAs, stripExtension } from "@/lib/editors/native";
+import { initWorkbook } from "@/lib/editors/sheets/model";
 
 const id = z.string().uuid();
 
@@ -20,6 +21,8 @@ export async function createNativeFile(input: {
   name: string;
   type: "document" | "spreadsheet";
   state?: string;
+  /** Name of the first sheet of a new spreadsheet ("Sheet1" / "Folha1"). */
+  sheetName?: string;
 }): Promise<ActionResult<{ id: string }>> {
   const parsed = z
     .object({
@@ -28,9 +31,18 @@ export async function createNativeFile(input: {
       name: z.string().min(1).max(255),
       type: z.enum(["document", "spreadsheet"]),
       state: z.string().max(40_000_000).optional(),
+      sheetName: z.string().min(1).max(100).optional(),
     })
     .safeParse(input);
   if (!parsed.success) return fail("generic");
+
+  let state = parsed.data.state;
+  if (!state && parsed.data.type === "spreadsheet") {
+    const doc = new Y.Doc();
+    initWorkbook(doc, parsed.data.sheetName ?? "Sheet1");
+    state = toBase64(Y.encodeStateAsUpdate(doc));
+    doc.destroy();
+  }
 
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("create_native_file", {
@@ -38,7 +50,7 @@ export async function createNativeFile(input: {
     p_parent_id: nullableArg(parsed.data.parentId),
     p_name: parsed.data.name,
     p_type: parsed.data.type,
-    p_state: parsed.data.state ?? EMPTY_YJS_STATE_BASE64,
+    p_state: state ?? EMPTY_YJS_STATE_BASE64,
   });
   if (error) return fail(errorCode(error));
   refresh();
@@ -139,7 +151,7 @@ export async function finishAssetUpload(input: { assetId: string }): Promise<Act
  * uploaded one (or in "My files" if the user can't add files there). The
  * editor then converts the original in the browser (?import=<sourceId>).
  */
-export async function createImportTarget(input: { sourceId: string }): Promise<
+export async function createImportTarget(input: { sourceId: string; sheetName?: string }): Promise<
   ActionResult<{ id: string; type: "document" | "spreadsheet" }>
 > {
   const parsed = z.object({ sourceId: id }).safeParse(input);
@@ -165,7 +177,7 @@ export async function createImportTarget(input: { sourceId: string }): Promise<
       .maybeSingle();
     location = { workspaceId: personal?.id ?? null, parentId: null };
   }
-  const created = await createNativeFile({ ...location, name: stripExtension(source.name!), type });
+  const created = await createNativeFile({ ...location, name: stripExtension(source.name!), type, sheetName: input.sheetName });
   if (!created.ok) return created;
   return ok({ id: created.data.id, type });
 }

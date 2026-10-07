@@ -14,10 +14,11 @@ import type { NativeType } from "@/lib/editors/native";
 export function useOpenWithNuvenca() {
   const router = useRouter();
   const message = useErrorMessage();
+  const t = useTranslations("editor.sheets");
   const [pending, startTransition] = useTransition();
   const open = (sourceId: string) =>
     startTransition(async () => {
-      const result = await createImportTarget({ sourceId });
+      const result = await createImportTarget({ sourceId, sheetName: t("sheetName", { number: 1 }) });
       if (!result.ok) return void toast.error(message(result.error));
       router.push(`/${result.data.type}/${result.data.id}?import=${sourceId}`);
     });

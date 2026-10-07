@@ -65,6 +65,7 @@ export class SupabaseYjsProvider {
   private firstUnsavedAt = 0;
   private saving = false;
   private connected = false;
+  private subscribedBefore = false;
   private destroyed = false;
   private destroyTimer: ReturnType<typeof setTimeout> | null = null;
   private onCompactNeeded?: () => void;
@@ -146,6 +147,9 @@ export class SupabaseYjsProvider {
           this.broadcastAwareness(true);
         }
         void this.flushSave();
+        // After a disconnection, fetch what was saved meanwhile by people who have since left.
+        if (this.subscribedBefore) void this.load();
+        this.subscribedBefore = true;
       } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
         this.setStatus("offline");
       }

@@ -409,7 +409,128 @@
       "restored": "Versão restaurada"
     },
     "sheets": {
-      "untitled": "Folha de cálculo sem título"
+      "untitled": "Folha de cálculo sem título",
+      "sheetName": "Folha{number}",
+      "formats": {
+        "automatic": "Automático",
+        "number": "Número",
+        "integer": "Número inteiro",
+        "percent": "Percentagem",
+        "euro": "Moeda (€)",
+        "dollar": "Moeda ($)",
+        "date": "Data",
+        "time": "Hora",
+        "datetime": "Data e hora",
+        "text": "Texto simples"
+      },
+      "decreaseDecimals": "Diminuir casas decimais",
+      "increaseDecimals": "Aumentar casas decimais",
+      "moreFormats": "Mais formatos",
+      "fillColor": "Cor de preenchimento",
+      "borders": {
+        "label": "Limites",
+        "all": "Todos os limites",
+        "outer": "Limites exteriores",
+        "inner": "Limites interiores",
+        "top": "Limite superior",
+        "bottom": "Limite inferior",
+        "left": "Limite esquerdo",
+        "right": "Limite direito",
+        "none": "Limpar limites"
+      },
+      "merge": "Unir células",
+      "unmerge": "Separar células",
+      "horizontalAlign": "Alinhar",
+      "align": {
+        "left": "Esquerda",
+        "center": "Centro",
+        "right": "Direita",
+        "top": "Topo",
+        "middle": "Meio",
+        "bottom": "Fundo"
+      },
+      "wrap": "Moldar texto",
+      "insertChart": "Gráfico",
+      "removeFilter": "Remover filtro",
+      "createFilter": "Criar um filtro",
+      "functions": "Funções",
+      "tabs": {
+        "add": "Adicionar folha",
+        "rename": "Mudar o nome",
+        "options": "Opções de {name}",
+        "duplicate": "Duplicar",
+        "moveLeft": "Mover para a esquerda",
+        "moveRight": "Mover para a direita",
+        "delete": "Eliminar",
+        "nameTaken": "Já existe uma folha com esse nome.",
+        "copyOf": "Cópia de {name}",
+        "confirmDelete": "Eliminar a folha “{name}”?"
+      },
+      "chart": {
+        "types": {
+          "column": "Colunas",
+          "bar": "Barras",
+          "line": "Linhas",
+          "area": "Área",
+          "pie": "Circular",
+          "scatter": "Dispersão"
+        },
+        "edit": "Editar gráfico",
+        "editor": "Editor de gráficos",
+        "close": "Fechar editor de gráficos",
+        "type": "Tipo de gráfico",
+        "range": "Intervalo de dados",
+        "invalidRange": "Use um intervalo como A1:C10.",
+        "title": "Título",
+        "headers": "Usar a primeira linha como cabeçalho",
+        "delete": "Eliminar gráfico"
+      },
+      "filter": {
+        "title": "Filtro",
+        "sortAsc": "Ordenar de A a Z",
+        "sortDesc": "Ordenar de Z a A",
+        "search": "Pesquisar valores",
+        "selectAll": "Selecionar tudo",
+        "clear": "Limpar",
+        "blanks": "(Vazias)",
+        "apply": "OK"
+      },
+      "nameBox": "Referência da célula",
+      "formulaBar": "Fórmula",
+      "stats": {
+        "sum": "Soma",
+        "average": "Média",
+        "count": "Contagem"
+      },
+      "newSpreadsheet": "Nova folha de cálculo",
+      "downloadXlsx": "Transferir como Excel (.xlsx)",
+      "downloadCsv": "Transferir folha atual (.csv)",
+      "deleteValues": "Eliminar valores",
+      "deleteRows": "Eliminar linhas",
+      "deleteCols": "Eliminar colunas",
+      "freeze": {
+        "noRows": "Nenhuma linha",
+        "rows": "{count, plural, one {# linha} other {# linhas}}",
+        "upToRow": "Até à linha {row}",
+        "noCols": "Nenhuma coluna",
+        "cols": "{count, plural, one {# coluna} other {# colunas}}",
+        "upToCol": "Até à coluna {col}"
+      },
+      "insert": {
+        "rowAbove": "Linha acima",
+        "rowBelow": "Linha abaixo",
+        "colLeft": "Coluna à esquerda",
+        "colRight": "Coluna à direita",
+        "sheet": "Nova folha"
+      },
+      "sortSheetAsc": "Ordenar folha pela coluna {col}, A → Z",
+      "sortSheetDesc": "Ordenar folha pela coluna {col}, Z → A",
+      "sortRangeAsc": "Ordenar intervalo A → Z",
+      "sortRangeDesc": "Ordenar intervalo Z → A",
+      "context": {
+        "cut": "Cortar",
+        "copy": "Copiar"
+      }
     }
   }
 }

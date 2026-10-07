@@ -409,7 +409,128 @@
       "restored": "Version restored"
     },
     "sheets": {
-      "untitled": "Untitled spreadsheet"
+      "untitled": "Untitled spreadsheet",
+      "sheetName": "Sheet{number}",
+      "formats": {
+        "automatic": "Automatic",
+        "number": "Number",
+        "integer": "Whole number",
+        "percent": "Percent",
+        "euro": "Currency (€)",
+        "dollar": "Currency ($)",
+        "date": "Date",
+        "time": "Time",
+        "datetime": "Date and time",
+        "text": "Plain text"
+      },
+      "decreaseDecimals": "Decrease decimal places",
+      "increaseDecimals": "Increase decimal places",
+      "moreFormats": "More formats",
+      "fillColor": "Fill colour",
+      "borders": {
+        "label": "Borders",
+        "all": "All borders",
+        "outer": "Outer borders",
+        "inner": "Inner borders",
+        "top": "Top border",
+        "bottom": "Bottom border",
+        "left": "Left border",
+        "right": "Right border",
+        "none": "Clear borders"
+      },
+      "merge": "Merge cells",
+      "unmerge": "Unmerge cells",
+      "horizontalAlign": "Align",
+      "align": {
+        "left": "Left",
+        "center": "Centre",
+        "right": "Right",
+        "top": "Top",
+        "middle": "Middle",
+        "bottom": "Bottom"
+      },
+      "wrap": "Wrap text",
+      "insertChart": "Chart",
+      "removeFilter": "Remove filter",
+      "createFilter": "Create a filter",
+      "functions": "Functions",
+      "tabs": {
+        "add": "Add sheet",
+        "rename": "Rename",
+        "options": "Options for {name}",
+        "duplicate": "Duplicate",
+        "moveLeft": "Move left",
+        "moveRight": "Move right",
+        "delete": "Delete",
+        "nameTaken": "A sheet with that name already exists.",
+        "copyOf": "Copy of {name}",
+        "confirmDelete": "Delete the sheet “{name}”?"
+      },
+      "chart": {
+        "types": {
+          "column": "Column",
+          "bar": "Bar",
+          "line": "Line",
+          "area": "Area",
+          "pie": "Pie",
+          "scatter": "Scatter"
+        },
+        "edit": "Edit chart",
+        "editor": "Chart editor",
+        "close": "Close chart editor",
+        "type": "Chart type",
+        "range": "Data range",
+        "invalidRange": "Use a range like A1:C10.",
+        "title": "Title",
+        "headers": "Use first row as headers",
+        "delete": "Delete chart"
+      },
+      "filter": {
+        "title": "Filter",
+        "sortAsc": "Sort A → Z",
+        "sortDesc": "Sort Z → A",
+        "search": "Search values",
+        "selectAll": "Select all",
+        "clear": "Clear",
+        "blanks": "(Blanks)",
+        "apply": "OK"
+      },
+      "nameBox": "Cell reference",
+      "formulaBar": "Formula",
+      "stats": {
+        "sum": "Sum",
+        "average": "Average",
+        "count": "Count"
+      },
+      "newSpreadsheet": "New spreadsheet",
+      "downloadXlsx": "Download as Excel (.xlsx)",
+      "downloadCsv": "Download current sheet (.csv)",
+      "deleteValues": "Delete values",
+      "deleteRows": "Delete rows",
+      "deleteCols": "Delete columns",
+      "freeze": {
+        "noRows": "No rows",
+        "rows": "{count, plural, one {# row} other {# rows}}",
+        "upToRow": "Up to row {row}",
+        "noCols": "No columns",
+        "cols": "{count, plural, one {# column} other {# columns}}",
+        "upToCol": "Up to column {col}"
+      },
+      "insert": {
+        "rowAbove": "Row above",
+        "rowBelow": "Row below",
+        "colLeft": "Column left",
+        "colRight": "Column right",
+        "sheet": "New sheet"
+      },
+      "sortSheetAsc": "Sort sheet by column {col}, A → Z",
+      "sortSheetDesc": "Sort sheet by column {col}, Z → A",
+      "sortRangeAsc": "Sort range A → Z",
+      "sortRangeDesc": "Sort range Z → A",
+      "context": {
+        "cut": "Cut",
+        "copy": "Copy"
+      }
     }
   }
 }

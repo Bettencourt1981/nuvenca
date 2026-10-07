@@ -35,6 +35,7 @@ export function FolderToolbar({
       parentId: target.parentId,
       name: type === "document" ? editor("docs.untitled") : editor("sheets.untitled"),
       type,
+      sheetName: editor("sheets.sheetName", { number: 1 }),
     });
     if (!result.ok) return void toast.error(message(result.error));
     router.push(`/${type}/${result.data.id}`);

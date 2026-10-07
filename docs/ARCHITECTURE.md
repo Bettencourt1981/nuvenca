@@ -10,12 +10,12 @@
    │                            ▼
    │            ┌──────────────── Supabase (eu-central-1) ───────────────┐
    └──────────▶ │ Auth · Postgres (RLS + functions) · Storage (private)  │
-  signed URLs   └─────────────────────────────────────────────────────────┘
-  (upload/download straight to Storage)
-
-  Stage 2 adds:  ONLYOFFICE Document Server (EU VPS or ONLYOFFICE cloud)
-                 ⇄ Vercel (JWT-signed editor config, save callback) ⇄ Storage
+  signed URLs   │ Realtime (private channels: live edits, cursors)       │
+  + websocket   └─────────────────────────────────────────────────────────┘
 ```
+
+There are only two services: Vercel and Supabase. The editors run in the browser and use no
+third-party editor server, licence or branding.
 
 - **The bytes never pass through Vercel.**
   - Uploads: the server checks permissions and quota, then hands the browser a signed upload URL,
@@ -26,8 +26,9 @@
   - Row Level Security decides what each user can read.
   - All writes go through `SECURITY DEFINER` functions that check permissions explicitly.
   - Clients have no direct INSERT, UPDATE or DELETE on any table except their own stars.
-  - The secret key is only used on the server, after a permission check: to sign storage URLs and
-    to resolve public links.
+  - The secret key is only used on the server, after a permission check. It signs storage URLs,
+    resolves public links (including reading a shared document's content), and merges document
+    edits (`compact_document` can only be run with the secret key).
 
 ## Data model (`supabase/migrations`)
 
@@ -39,11 +40,16 @@
 | `plans` | Limits per plan: storage quota, maximum file size, members, trash retention, feature flags and prices. |
 | `subscriptions` | Payment-provider details per workspace (empty until billing launches). |
 | `files` | Files and folders in one table. `ancestor_ids` stores the full path, so permission checks and moves are single indexed operations. |
-| `file_versions` | Every stored object. Uploads create version 1; the editors will add new versions on save. Storage usage is the sum of ready versions. |
+| `file_versions` | Every uploaded object. Uploads create version 1. Storage usage is the sum of ready versions. |
 | `file_shares` | Grants by email with role `viewer`, `commenter` or `editor`. `user_id` is filled in once that email belongs to a confirmed account. |
 | `share_links` | "Anyone with the link" access: one link per item, with a role and an on/off switch. |
 | `file_stars` | Each user's starred items. |
 | `drive_items` (view) | Files plus the caller's access level, whether they starred it, and the owner's name. Used by every list. |
+| `document_states` | The merged content of a Nuvenca document or spreadsheet (a Yjs update). |
+| `document_updates` | Edits appended by the editors since the last merge. They are merged into `document_states` once there are enough of them. |
+| `document_versions` | Version history: automatic snapshots every 10 minutes of editing, plus named versions. |
+| `document_comments` | Comment threads and replies, anchored to a text range or a cell. |
+| `document_assets` | Images inserted into documents (stored in Storage, counted in the quota). |
 
 ### Access levels
 
@@ -81,32 +87,71 @@ inheritance, invitations sent before sign-up, quotas, trash and team roles.
 - The translations are `src/messages/{en,pt}.json`. TypeScript checks the keys used in code, and
   `npm run check:i18n` keeps both files in sync.
 
+## Editors (stage 2)
+
+Nuvenca's documents and spreadsheets are its own, built on permissively licensed libraries:
+
+| Part | Libraries (licence) |
+| --- | --- |
+| Real-time collaboration | Yjs, y-protocols (MIT), over Supabase Realtime |
+| Document editor | Tiptap 3 and ProseMirror (MIT) |
+| Word import and export | mammoth (BSD-2) in the browser, docx (MIT) on the server |
+| Spreadsheet formulas | Nuvenca's own parser and evaluator, with formulajs (MIT) for the function library |
+| Number formats | numfmt (MIT), the same format codes as Excel |
+| Charts | Chart.js (MIT) |
+| Excel import and export | ExcelJS (MIT) |
+
+### How live editing works
+
+- **Content model.** A native file is a row in `files` with the MIME type
+  `application/vnd.nuvenca.document` or `application/vnd.nuvenca.spreadsheet`. Its content is a Yjs
+  CRDT document. Concurrent edits from several people merge automatically, without a server
+  deciding the order.
+- **Opening a file.** The editor calls `load_document`. It returns the merged state plus the edits
+  added since, but only if the caller has access.
+- **Live edits.** Each change is broadcast on the private Realtime channel `file:<id>`, batched
+  every 60 ms. Policies on `realtime.messages` only let people with access to the file join that
+  channel, and only editors send edits. Cursors and names travel on the same channel.
+- **Saving.** Editors also append their changes to `document_updates` through
+  `append_document_update`. They save after 0.8 seconds of quiet, and at least every 4 seconds
+  while typing. The header shows "Saving…" and then "All changes saved". After 50 updates, a server
+  action merges them into `document_states`. The merge uses a revision check, so it is safe when
+  several people edit at once.
+- **Reconnecting.** On reconnect, the editor saves what is pending, reloads what others saved
+  meanwhile, and asks the people who are online for anything else.
+- **Permissions.** Viewers and commenters get a read-only editor. Commenters can still add comments.
+  Public links open a read-only view rendered from the stored state.
+
+### Spreadsheet model
+
+- **Stable ids.** Rows and columns have stable ids, and cells are stored under `rowId:colId`.
+  Inserting or deleting rows only changes the order lists, so it merges cleanly with what others
+  are typing.
+- **Formulas.** They are stored with references to those ids, so they follow inserted and deleted
+  rows the way Excel does. They are shown in A1 notation.
+- **Sorting.** Sorting moves cell contents within the range, like Excel and Google Sheets. Formulas
+  that point at the range keep pointing at the same cells.
+- **Evaluation.** Formulas are evaluated in the browser, memoised, with circular references
+  detected. About 400 functions are available.
+- **Excel export.** `.xlsx` files are written on the server (`/api/files/<id>/download`) from the
+  stored state. Formulas keep their last computed result, so Excel shows values immediately.
+
+### Limits of the beta
+
+| Area | Limit |
+| --- | --- |
+| Word import | Keeps structure (headings, lists, tables, bold and italic, images), not the exact page layout. |
+| Excel export | Charts are not exported yet. |
+| Google Docs and Sheets | Users download the file from Google as `.docx` or `.xlsx` and upload it. Direct import comes in stage 3. |
+| Offline | Editing needs a connection. Short drops are handled: edits are kept and saved on reconnect. |
+| Search | Only file and folder names are searched, not document contents. |
+| Size | Sheets go up to 100,000 rows and 702 columns (A to ZZ). Only the visible cells are drawn. Imports stop at 250,000 cells. |
+
 ## Roadmap
 
 | Stage | Scope | Status |
 | --- | --- | --- |
 | 1 | Accounts, file manager, uploads, previews, sharing (people + links), team workspaces, quotas | **Done** |
-| 2 | Document and spreadsheet editors: create and edit `.docx` and `.xlsx` (and `.pptx` at no extra cost), live co-editing, comments, version history, Word and Excel import/export | Next |
-| 3 | Google Docs/Sheets import and export via the Google Picker (`drive.file` scope, so no restricted-scope security review), email notifications for shares, search inside documents | Planned |
-| 4 | Billing (Stripe), admin console, audit log, offline viewing (PWA) | Planned |
-
-### Editor engine decision (stage 2)
-
-The requirements are: live co-editing, high-fidelity Word and Excel import/export, advanced
-formulas, charts, filters, comments, version history and mobile. Three options were compared:
-
-| Option | Fidelity and features | Effort | Cost and licensing notes |
-| --- | --- | --- | --- |
-| **ONLYOFFICE Docs** (recommended) | Native `.docx`/`.xlsx`/`.pptx`. Co-editing, comments, history, charts, pivots and 400+ formulas built in. | Weeks | **Community edition:** free, AGPLv3. Must keep ONLYOFFICE branding. No mobile web editing. **Developer edition:** white-label, mobile and scaling, priced by quote. A hosted "Docs Developer Cloud" also exists. Needs a server: about 4 GB RAM to start. |
-| Collabora Online | Good (LibreOffice core). Rendering happens on the server. | Weeks | MPL. Commercial support is quote-based for SaaS. Heavier servers. |
-| Build our own (Tiptap + Yjs for docs, Univer for sheets) | Lower Word/Excel fidelity. | Many months | Univer's co-editing, xlsx import/export and charts are paid "Pro" features. |
-
-**ONLYOFFICE is the recommendation.**
-
-- **How it fits the current design:** stage 1 already stores files as versions in Storage, so an
-  edited document simply becomes the next `file_versions` row. The editor's save callback lands in
-  a Vercel route handler.
-- **For the beta:** start with the free Community edition on a small EU server.
-- **Before a public launch:** move to the Developer edition, which adds white-label and mobile
-  editing.
-- Pricing and licence terms change. Confirm them with ONLYOFFICE before committing.
+| 2 | Nuvenca Docs and Sheets: live co-editing, comments, version history, Word/Excel import and export | **Done** |
+| 3 | Google Docs/Sheets import through the Google Picker (`drive.file` scope, so no restricted-scope security review), search inside documents, email notifications for shares, chart export to Excel | Planned |
+| 4 | Billing (Stripe), admin console, audit log, offline editing (PWA with local storage of documents) | Planned |
