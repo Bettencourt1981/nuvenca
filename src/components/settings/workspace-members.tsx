@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import { addMember, listMembers, removeMember, updateMemberRole, type WorkspaceMember } from "@/lib/actions/workspace";
@@ -21,6 +21,7 @@ export function WorkspaceMembers({
   canManage: boolean;
 }) {
   const t = useTranslations("workspace");
+  const locale = useLocale();
   const message = useErrorMessage();
   const [loaded, setLoaded] = useState<Awaited<ReturnType<typeof listMembers>> | null>(null);
   const [version, setVersion] = useState(0);
@@ -58,7 +59,7 @@ export function WorkspaceMembers({
             const value = email.trim();
             if (!value) return;
             run(async () => {
-              const result = await addMember({ workspaceId, email: value, role });
+              const result = await addMember({ workspaceId, email: value, role, locale });
               if (result.ok) setEmail("");
               return result;
             }, t("memberAdded"));

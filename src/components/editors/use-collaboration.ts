@@ -11,11 +11,26 @@ import {
   type SaveStatus,
 } from "@/lib/collab/provider";
 import { compactDocument } from "@/lib/actions/documents";
+import type { NativeType } from "@/lib/editors/native";
+import { nativeText } from "@/lib/editors/text";
 
 export type CollabUser = { id: string; name: string };
 
+/** How long after someone's edit the search index is refreshed. */
+const INDEX_DELAY = 4000;
+
 /** Opens the live session for a native file: Yjs doc + Supabase provider. */
-export function useCollaboration({ fileId, canEdit, user }: { fileId: string; canEdit: boolean; user: CollabUser }) {
+export function useCollaboration({
+  fileId,
+  type,
+  canEdit,
+  user,
+}: {
+  fileId: string;
+  type: NativeType;
+  canEdit: boolean;
+  user: CollabUser;
+}) {
   const [session] = useState(() => {
     const doc = new Y.Doc();
     const provider = new SupabaseYjsProvider({
@@ -50,6 +65,43 @@ export function useCollaboration({ fileId, canEdit, user }: { fileId: string; ca
       provider.disconnect();
     };
   }, [provider]);
+
+  // Keep the search index in step with the content. Each editor indexes its
+  // own edits (not everyone else's), a few seconds after they happen.
+  const { doc } = session;
+  useEffect(() => {
+    if (!canEdit || !synced) return;
+    const supabase = createClient();
+    let indexed: string | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const index = () => {
+      timer = null;
+      const text = nativeText(doc, type);
+      if (text === indexed) return;
+      indexed = text;
+      // PostgREST requests only run once awaited/then-ed.
+      void supabase.rpc("set_file_content", { p_file_id: fileId, p_content: text }).then(({ error }) => {
+        if (error) indexed = null; // try again after the next edit
+      });
+    };
+    const onUpdate = (_update: Uint8Array, origin: unknown) => {
+      if (origin === "load" || origin === provider || timer) return;
+      timer = setTimeout(index, INDEX_DELAY);
+    };
+    const flush = () => {
+      if (!timer) return;
+      clearTimeout(timer);
+      index();
+    };
+    index();
+    doc.on("update", onUpdate);
+    window.addEventListener("pagehide", flush);
+    return () => {
+      doc.off("update", onUpdate);
+      window.removeEventListener("pagehide", flush);
+      flush();
+    };
+  }, [doc, provider, fileId, type, canEdit, synced]);
 
   return { ...session, status, saveStatus, synced, peers, error };
 }

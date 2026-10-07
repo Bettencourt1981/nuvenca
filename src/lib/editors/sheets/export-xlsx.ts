@@ -1,11 +1,12 @@
 import "server-only";
 import type * as Y from "yjs";
 import ExcelJS from "exceljs";
-import { Workbook } from "./engine";
+import { Workbook, type SheetIndex } from "./engine";
 import { isError } from "./formula/values";
 import { rangeName } from "./address";
 import type { BorderSide, CellStyle } from "./model";
 import { addFutureFunctionPrefixes, hexToArgb, pxToPoints, pxToWidth } from "./xlsx-common";
+import { addChartsToXlsx, type XlsxChartOut } from "./xlsx-charts";
 
 function border(side: BorderSide | undefined): Partial<ExcelJS.Border> | undefined {
   if (!side) return undefined;
@@ -39,18 +40,62 @@ function applyStyle(cell: ExcelJS.Cell, s: CellStyle) {
   }
 }
 
-/** Workbook document → .xlsx (values, formulas with cached results, styles, sizes, merges, freezes, filters). */
+/** A sheet's charts in file terms (indices, cached values). */
+function exportCharts(wb: Workbook, sheet: SheetIndex): XlsxChartOut[] {
+  const out: XlsxChartOut[] = [];
+  for (const [, chart] of sheet.charts) {
+    const r1 = sheet.rowIndex.get(chart.range.r1);
+    const r2 = sheet.rowIndex.get(chart.range.r2);
+    const c1 = sheet.colIndex.get(chart.range.c1);
+    const c2 = sheet.colIndex.get(chart.range.c2);
+    const row = sheet.rowIndex.get(chart.anchor.rowId);
+    const col = sheet.colIndex.get(chart.anchor.colId);
+    if ([r1, r2, c1, c2, row, col].some((v) => v === undefined)) continue;
+    const range = { r1: r1!, c1: c1!, r2: r2!, c2: c2! };
+    const headers = chart.headers ?? true;
+    const firstRow = headers ? range.r1 + 1 : range.r1;
+    const labelCol = range.c2 > range.c1 ? range.c1 : null;
+    const categories: string[] = [];
+    for (let r = firstRow; r <= range.r2; r++) categories.push(labelCol === null ? String(r - firstRow + 1) : wb.display(sheet.id, r, labelCol));
+    const series: XlsxChartOut["series"] = [];
+    for (let c = labelCol === null ? range.c1 : range.c1 + 1, i = 0; c <= range.c2; c++, i++) {
+      const values: (number | null)[] = [];
+      for (let r = firstRow; r <= range.r2; r++) {
+        const value = wb.value(sheet.id, r, c);
+        values.push(typeof value === "number" ? value : null);
+      }
+      series.push({ name: headers ? wb.display(sheet.id, range.r1, c) : `${i + 1}`, values });
+    }
+    if (series.length === 0 || firstRow > range.r2) continue;
+    out.push({
+      type: chart.type,
+      title: chart.title,
+      range,
+      headers,
+      anchor: { row: row!, col: col!, dx: chart.anchor.dx, dy: chart.anchor.dy },
+      width: chart.width,
+      height: chart.height,
+      categories,
+      series,
+    });
+  }
+  return out;
+}
+
+/** Workbook document → .xlsx (values, formulas with cached results, styles, sizes, merges, freezes, filters, charts). */
 export async function workbookToXlsx(doc: Y.Doc): Promise<Uint8Array> {
   const wb = new Workbook(doc, "en");
   const book = new ExcelJS.Workbook();
   book.creator = "Nuvenca";
   const used = new Set<string>();
+  const charts = new Map<string, XlsxChartOut[]>();
 
   for (const sheet of wb.sheets()) {
     // Excel sheet names: max 31 chars, no []:*?/\ and unique.
     let name = sheet.name.replace(/[[\]:*?/\\]/g, "_").slice(0, 31) || "Sheet";
     for (let n = 2; used.has(name.toLowerCase()); n++) name = `${name.slice(0, 28)} ${n}`;
     used.add(name.toLowerCase());
+    charts.set(name, exportCharts(wb, sheet));
 
     const ws = book.addWorksheet(name, {
       views: sheet.frozenRows || sheet.frozenCols ? [{ state: "frozen", xSplit: sheet.frozenCols, ySplit: sheet.frozenRows }] : [],
@@ -93,5 +138,5 @@ export async function workbookToXlsx(doc: Y.Doc): Promise<Uint8Array> {
     }
   }
   const buffer = await book.xlsx.writeBuffer();
-  return new Uint8Array(buffer as ArrayBuffer);
+  return addChartsToXlsx(new Uint8Array(buffer as ArrayBuffer), charts);
 }

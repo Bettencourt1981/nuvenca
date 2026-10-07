@@ -110,3 +110,20 @@ export async function updateProfile(input: { fullName: string; locale: string })
   refresh();
   return ok(undefined);
 }
+
+/** Remember the interface language on the profile (emails use it). */
+export async function saveLanguage(input: { locale: string }): Promise<ActionResult> {
+  const parsed = z.object({ locale }).safeParse(input);
+  if (!parsed.success) return fail("generic");
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getClaims();
+  const userId = auth?.claims?.sub;
+  if (!userId) return fail("not_authenticated");
+  const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle();
+  const { error } = await supabase.rpc("update_profile", {
+    p_full_name: profile?.full_name ?? "",
+    p_locale: parsed.data.locale,
+  });
+  if (error) return fail(errorCode(error));
+  return ok(undefined);
+}

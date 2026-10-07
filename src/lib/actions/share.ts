@@ -1,10 +1,15 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { siteUrl } from "@/lib/env";
 import { errorCode, fail, ok, type ActionResult } from "@/lib/errors";
+import { itemHref } from "@/lib/links";
+import { nativeType } from "@/lib/editors/native";
+import { emailConfigured, sendEmail } from "@/lib/email/mailer";
+import { fileSharedEmail } from "@/lib/email/templates";
 import type { ShareRole } from "@/lib/types";
 
 const id = z.string().uuid();
@@ -22,6 +27,8 @@ export type AccessEntry = {
 
 export type ShareSettings = {
   canManage: boolean;
+  /** Whether people can be notified by email (SMTP is configured). */
+  canNotify: boolean;
   owner: { name: string | null } | null;
   people: AccessEntry[];
   link: { enabled: boolean; role: ShareRole; url: string } | null;
@@ -52,6 +59,7 @@ export async function getShareSettings(input: { fileId: string }): Promise<Actio
 
   return ok({
     canManage,
+    canNotify: canManage && emailConfigured(),
     owner: { name: item.owner_name },
     people: (people ?? []).map((p) => ({
       shareId: p.share_id,
@@ -70,18 +78,68 @@ export async function shareWithEmail(input: {
   fileId: string;
   email: string;
   role: ShareRole;
-}): Promise<ActionResult> {
-  const parsed = z.object({ fileId: id, email: z.string().trim().max(320), role }).safeParse(input);
+  /** Email the person (default true when email is configured). */
+  notify?: boolean;
+  message?: string;
+  /** The sharer's interface language (used when the recipient has none yet). */
+  locale?: string;
+}): Promise<ActionResult<{ notified: boolean; limited: boolean }>> {
+  const parsed = z
+    .object({
+      fileId: id,
+      email: z.string().trim().max(320),
+      role,
+      notify: z.boolean().optional(),
+      message: z.string().trim().max(1000).optional(),
+      locale: z.string().max(10).optional(),
+    })
+    .safeParse(input);
   if (!parsed.success) return fail("invalid_email");
   const supabase = await createClient();
-  const { error } = await supabase.rpc("share_file", {
+  const { data: share, error } = await supabase.rpc("share_file", {
     p_file_id: parsed.data.fileId,
     p_email: parsed.data.email,
     p_role: parsed.data.role,
   });
   if (error) return fail(errorCode(error));
   refresh();
-  return ok(undefined);
+
+  // Only new shares send an email (changing someone's role doesn't).
+  const isNew = share.created_at === share.updated_at;
+  if (!isNew || parsed.data.notify === false || !emailConfigured()) return ok({ notified: false, limited: false });
+
+  const { data: details, error: notifyError } = await supabase
+    .rpc("prepare_share_notification", { p_share_id: share.id })
+    .maybeSingle();
+  if (notifyError || !details) return ok({ notified: false, limited: errorCode(notifyError) === "rate_limited" });
+
+  const kind = details.file_kind === "folder" ? "folder" : (nativeType(details.file_mime) ?? "file");
+  const url = details.has_account
+    ? `${siteUrl()}${itemHref({ id: details.file_id, kind: details.file_kind, mimeType: details.file_mime })}`
+    : `${siteUrl()}/signup?email=${encodeURIComponent(details.recipient)}`;
+  const email = fileSharedEmail(
+    {
+      recipient: details.recipient,
+      recipientLocale: details.recipient_locale,
+      hasAccount: details.has_account,
+      itemName: details.file_name,
+      itemKind: kind,
+      role: details.role,
+      senderName: details.sender_name,
+      senderEmail: details.sender_email,
+      message: parsed.data.message || undefined,
+      url,
+    },
+    parsed.data.locale,
+  );
+  after(async () => {
+    try {
+      await sendEmail(email);
+    } catch (sendError) {
+      console.error("Share email failed", sendError instanceof Error ? sendError.message : sendError);
+    }
+  });
+  return ok({ notified: true, limited: false });
 }
 
 export async function updateShareRole(input: { shareId: string; role: ShareRole }): Promise<ActionResult> {

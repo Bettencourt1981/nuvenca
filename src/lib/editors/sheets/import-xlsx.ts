@@ -18,6 +18,7 @@ import {
   colWidths,
   rowHeights,
   sheetCells,
+  sheetCharts,
   sheetMerges,
   sheetOrder,
   sheetRows,
@@ -28,6 +29,7 @@ import {
   type CellStyle,
 } from "./model";
 import { argbToHex, pointsToPx, stripFutureFunctionPrefixes, widthToPx } from "./xlsx-common";
+import { readXlsxCharts, withoutDrawings, type XlsxChartIn } from "./xlsx-charts";
 
 /** Imports larger than this many cells are cut short to keep the editor responsive. */
 export const MAX_IMPORT_CELLS = 250_000;
@@ -125,7 +127,19 @@ function literal(value: ExcelJSType.CellValue): string | number | boolean | unde
 export async function xlsxToDoc(data: ArrayBuffer, locale: string): Promise<Y.Doc> {
   const ExcelJS = (await import("exceljs")).default;
   const book = new ExcelJS.Workbook();
-  await book.xlsx.load(data);
+  await book.xlsx.load(await withoutDrawings(data));
+
+  // Charts are read from the zip directly (ExcelJS ignores them). Sizes use
+  // Excel's defaults (64 px columns, 20 px rows) where the file sets none.
+  let charts = new Map<string, XlsxChartIn[]>();
+  try {
+    charts = await readXlsxCharts(data, {
+      colWidth: (sheet, col) => widthToPx(book.getWorksheet(sheet)?.getColumn(col + 1).width ?? 8.43),
+      rowHeight: (sheet, row) => pointsToPx(book.getWorksheet(sheet)?.getRow(row + 1).height ?? 15),
+    });
+  } catch {
+    // A damaged chart part shouldn't block the data.
+  }
 
   const doc = new Y.Doc();
   const formulas: { sheetId: string; key: string; formula: string; style?: CellStyle }[] = [];
@@ -180,6 +194,20 @@ export async function xlsxToDoc(data: ArrayBuffer, locale: string): Promise<Y.Do
         const c2 = columnIndex(match[3]);
         if (r2 >= rowCount || c2 >= colCount) continue;
         sheetMerges(sheet).set(newId(), { r1: rowIds[r1], c1: colIds[c1], r2: rowIds[r2], c2: colIds[c2] });
+      }
+
+      for (const chart of charts.get(ws.name) ?? []) {
+        const { range, anchor } = chart;
+        if (range.r2 >= rowCount || range.c2 >= colCount || anchor.row >= rowCount || anchor.col >= colCount) continue;
+        sheetCharts(sheet).set(newId(), {
+          type: chart.type,
+          ...(chart.title ? { title: chart.title } : {}),
+          range: { r1: rowIds[range.r1], c1: colIds[range.c1], r2: rowIds[range.r2], c2: colIds[range.c2] },
+          anchor: { rowId: rowIds[anchor.row], colId: colIds[anchor.col], dx: Math.max(0, anchor.dx), dy: Math.max(0, anchor.dy) },
+          width: chart.width,
+          height: chart.height,
+          headers: chart.headers,
+        });
       }
     }
 

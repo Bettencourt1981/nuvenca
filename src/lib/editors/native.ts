@@ -30,5 +30,8 @@ export function stripExtension(name: string) {
   return name.replace(/\.(docx?|xlsx?|csv|odt|ods)$/i, "") || name;
 }
 
+/** Yjs fragment that holds a document's body. */
+export const DOCUMENT_FIELD = "default";
+
 /** An empty Yjs update (state with no content). */
 export const EMPTY_YJS_STATE_BASE64 = "AAA=";

@@ -3,8 +3,9 @@
 Cloud storage with sharing, plus documents and spreadsheets that several people can edit at once,
 built on **Next.js (Vercel)** and **Supabase**. Interface in Portuguese (pt-PT) and English.
 
-> **Status: beta, stages 1 and 2 of 4 done.** The file manager, sharing, team workspaces and the
-> document and spreadsheet editors are working. The editors are Nuvenca's own, built only on
+> **Status: beta, stages 1 to 3 of 4 done.** The file manager, sharing, team workspaces, the
+> document and spreadsheet editors, search inside files, email notifications and Google Drive
+> import/export are working. The editors are Nuvenca's own, built only on
 > open-source libraries with permissive licences (MIT, ISC, BSD). There is no third-party editor
 > server, licence or branding. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the design and
 > roadmap.
@@ -22,6 +23,13 @@ built on **Next.js (Vercel)** and **Supabase**. Interface in Portuguese (pt-PT) 
   **editor**, including people who don't have an account yet. Folder access applies to
   everything inside.
 - **Public links:** "Anyone with the link" access, which can be turned off at any time.
+- **Email notifications:** people get an email when something is shared with them (with an
+  optional message), or when they're added to a team. It's in their language, and people without
+  an account are invited to sign up. Changing someone's role doesn't email them again.
+- **Search inside files:** search looks at names and at the text inside Nuvenca documents and
+  spreadsheets, PDFs, Word, Excel, PowerPoint and text files. It ignores accents and matches the
+  start of words ("orcam" finds "Orçamento"), shows the matching passage, and only finds files
+  the person can open.
 - **Team workspaces:** shared spaces for companies, with members, admins and their own storage.
 - **Plans and quotas:** storage and file-size limits are enforced per workspace. The data model is
   ready for paid plans; there is no billing yet.
@@ -48,22 +56,36 @@ built on **Next.js (Vercel)** and **Supabase**. Interface in Portuguese (pt-PT) 
 - **Data:** sorting, filters, and charts (column, bar, line, area, pie, scatter).
 - **Also:** comments on cells, version history, undo and redo, copy and paste (including from
   Excel and Google Sheets), and printing.
-- **Excel and CSV:** download as `.xlsx` or `.csv`. "Open with Nuvenca Sheets" on an uploaded
-  `.xlsx` or `.csv` creates an editable copy.
+- **Excel and CSV:** download as `.xlsx` or `.csv`, charts included. "Open with Nuvenca Sheets"
+  on an uploaded `.xlsx` or `.csv` creates an editable copy, charts included.
 - Numbers are typed and shown in the user's language, for example `1,5` in Portuguese and `1.5`
   in English.
+
+### Google Drive
+
+- **Import from Google Drive** (New menu) opens Google's file picker.
+  - Google Docs and Sheets become Nuvenca documents and spreadsheets.
+  - Other files (PDF, Office, images…) are copied as they are.
+- **Save to Google Drive** (File menu of the editors) creates a Google Doc or Sheet from the file.
+- Nuvenca only asks for access to the files the person picks or creates (`drive.file`). It never
+  sees the rest of their Drive.
+- Google's scripts load only when someone opens a menu with a Google Drive option. The Google
+  token stays in the browser tab.
 
 ### Known limits of the beta
 
 - **Word import:** keeps the structure (headings, lists, tables, bold, images) but not the exact
   page layout. Headers and footers, page size and columns are lost.
-- **Excel export:** keeps values, formulas, formatting, merges and frozen panes, but charts are
-  not exported yet.
-- **Google Docs and Sheets:** download the file from Google as `.docx` or `.xlsx` and upload it.
-  Direct import through the Google Picker is planned for stage 3.
+- **Excel files:** values, formulas, formatting, merges, frozen panes and the common chart types
+  (column, bar, line, area, pie, scatter) go both ways. Pivot tables, macros, conditional
+  formatting, images in sheets, and charts that plot another sheet's data are not imported.
+- **Google files:** Google Docs and Sheets go through Word/Excel, so the same limits apply.
+  Google exports files up to 10 MB. Forms, Sites and Maps can't be imported.
 - **Offline editing:** not supported yet. The editor shows when the connection is lost and
   catches up when it comes back.
-- **Search:** finds file and folder names but does not look inside documents yet.
+- **Search:** scanned PDFs (images of text) aren't searchable, because there's no OCR. Uploads
+  larger than 25 MB are found by name only, and only the first 200,000 characters of a file are
+  indexed.
 - **Sorting:** sorts the selected range. Comments attached to sorted cells stay where they were.
 
 ## Run it locally
@@ -81,14 +103,16 @@ npm run dev                      # http://localhost:3000
 ```
 
 Locally, email confirmation is off, so you can sign up with any address. Emails such
-as password resets are captured at http://127.0.0.1:54324.
+as password resets are captured at http://127.0.0.1:54324. To see share notifications there too,
+set `SMTP_HOST=127.0.0.1`, `SMTP_PORT=54325` and `EMAIL_FROM=Nuvenca <no-reply@localhost>` in
+`.env.local`.
 
 ### Useful scripts
 
 | Command | What it does |
 | --- | --- |
 | `npm run check` | Translation key check, lint, TypeScript and unit tests |
-| `npm test` | Unit tests for the spreadsheet engine (Vitest) |
+| `npm test` | Unit tests: spreadsheet engine, Excel charts, search text extraction, email templates (Vitest) |
 | `npm run db:test` | Database permission tests (pgTAP) |
 | `npm run db:reset` | Rebuild the local database from `supabase/migrations` |
 | `npm run db:types` | Regenerate `src/lib/supabase/database.types.ts` after a schema change |
@@ -135,10 +159,42 @@ as password resets are captured at http://127.0.0.1:54324.
    | `SUPABASE_SECRET_KEY` | Secret key (or the legacy `service_role` key). **Never expose it.** |
    | `NEXT_PUBLIC_SITE_URL` | `https://<your-domain>` |
    | `CRON_SECRET` | A long random string. Protects the daily cleanup job. |
+   | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAIL_FROM` | Optional: email notifications (step 3). |
+   | `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `NEXT_PUBLIC_GOOGLE_API_KEY`, `NEXT_PUBLIC_GOOGLE_APP_ID` | Optional: Google Drive import and export (step 4). |
 
 3. Deploy. `vercel.json` already does two things:
    - pins server functions to Frankfurt (`fra1`);
    - schedules the daily cleanup of expired trash.
+
+### 3. Email notifications (optional)
+
+Share and team emails are sent over SMTP, so any provider works (Resend, Brevo, Amazon SES (EU),
+Mailgun, Postmark…). You can use the same provider as Supabase Auth.
+
+1. Verify your sending domain with the provider (SPF and DKIM records), so emails aren't marked
+   as spam.
+2. Set `SMTP_HOST`, `SMTP_PORT` (587, or 465 for SSL), `SMTP_USER`, `SMTP_PASSWORD` and
+   `EMAIL_FROM` (for example `Nuvenca <no-reply@your-domain.com>`) in Vercel.
+
+Without these settings, sharing works the same and no emails are sent. Each person can send at
+most 30 notification emails an hour and 100 a day, which stops the feature being used for spam.
+
+### 4. Google Drive (optional)
+
+1. In [Google Cloud Console](https://console.cloud.google.com/), use the project of your Google
+   sign-in (or create one). Enable the **Google Drive API** and the **Google Picker API**.
+2. **OAuth consent screen:** add the scope `https://www.googleapis.com/auth/drive.file`. It isn't a
+   restricted scope, so Google's security assessment isn't needed. The app still needs Google's
+   brand verification before it's public.
+3. **Credentials:**
+   - **OAuth client ID** (type *Web application*). Authorised JavaScript origins:
+     `https://<your-domain>` (plus `http://localhost:3000` for development).
+   - **API key**, restricted to the Google Picker API and to your domain (HTTP referrers).
+4. In Vercel, set `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `NEXT_PUBLIC_GOOGLE_API_KEY` and
+   `NEXT_PUBLIC_GOOGLE_APP_ID` (the project **number**, on the project dashboard), then redeploy.
+   These values are public by design.
+
+Without these settings, the Google Drive menu items are hidden.
 
 ## Project structure
 
@@ -152,13 +208,16 @@ src/
   app/api/             Auth callback, downloads (signed URLs, Word/Excel export), cleanup cron
   components/          UI (drive browser, dialogs, upload manager, settings)
     editors/           Document editor (Tiptap) and spreadsheet editor (grid, toolbar, charts)
+    google/            "Import from Google Drive" and "Save to Google Drive"
   lib/actions/         Server Actions (all writes)
   lib/collab/          Real-time sync of Yjs documents over Supabase Realtime
-  lib/editors/sheets/  Spreadsheet model, formula engine, Excel import/export
+  lib/editors/sheets/  Spreadsheet model, formula engine, Excel import/export (with charts)
+  lib/email/           SMTP sending and the notification email templates (pt/en)
+  lib/google/          Google Identity, Picker and Drive API calls (browser only)
   lib/data/            Server-side reads
   messages/            Translations (en.json, pt.json; keys must match)
   proxy.ts             Session refresh, language detection, route protection
 supabase/
   migrations/          Database schema, permissions and functions
-  tests/               pgTAP tests for permissions, sharing and documents
+  tests/               pgTAP tests for permissions, sharing, documents, search and notifications
 ```

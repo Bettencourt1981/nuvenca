@@ -152,9 +152,12 @@ export async function ListView({
   empty,
   actions,
   notice,
+  snippets,
 }: {
   title: ReactNode;
   items: FileItem[];
+  /** File id → matching passage (search results). */
+  snippets?: Record<string, string>;
   mode: BrowserMode;
   empty: { icon: ReactNode; title: string; hint?: string };
   actions?: ReactNode;
@@ -167,6 +170,7 @@ export async function ListView({
       {notice}
       <FileBrowser
         items={items}
+        snippets={snippets}
         mode={mode}
         currentUserId={user.id}
         workspaceLabels={await workspaceLabels(workspaces)}

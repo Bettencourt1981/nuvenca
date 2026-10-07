@@ -5,9 +5,11 @@ import { useLocale, useTranslations } from "next-intl";
 import { Globe } from "lucide-react";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { routing, type Locale } from "@/i18n/routing";
+import { saveLanguage } from "@/lib/actions/account";
 import { cn } from "@/lib/utils";
 
-export function LanguageSwitcher({ className }: { className?: string }) {
+/** `persist`: also save the choice on the signed-in user's profile. */
+export function LanguageSwitcher({ className, persist = false }: { className?: string; persist?: boolean }) {
   const t = useTranslations("common");
   const locale = useLocale();
   const router = useRouter();
@@ -23,7 +25,10 @@ export function LanguageSwitcher({ className }: { className?: string }) {
         disabled={pending}
         onChange={(event) => {
           const next = event.target.value as Locale;
-          startTransition(() => router.replace(pathname, { locale: next }));
+          startTransition(async () => {
+            if (persist) await saveLanguage({ locale: next });
+            router.replace(pathname, { locale: next });
+          });
         }}
         className="cursor-pointer bg-transparent py-1 text-sm text-foreground focus:outline-none"
       >

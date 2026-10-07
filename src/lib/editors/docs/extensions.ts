@@ -43,5 +43,4 @@ export function documentExtensions(options: { assetQuery?: string } = {}): Exten
   ];
 }
 
-/** Yjs fragment that holds the document body. */
-export const DOCUMENT_FIELD = "default";
+export { DOCUMENT_FIELD } from "../native";

@@ -4,7 +4,8 @@ import { STORAGE_BUCKET } from "@/lib/env";
 
 /**
  * Daily job (see vercel.json): deletes trash past its retention period and
- * abandoned uploads, then removes their objects from Storage.
+ * abandoned uploads, then removes their objects from Storage. Also forgets
+ * old entries of the notification email log.
  */
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -20,5 +21,7 @@ export async function GET(request: NextRequest) {
     const { error: removeError } = await admin.storage.from(STORAGE_BUCKET).remove(paths!.slice(i, i + 100));
     if (removeError) console.error("cleanup: failed to remove objects", removeError);
   }
-  return NextResponse.json({ removedObjects: paths?.length ?? 0 });
+  const { data: prunedEmails, error: pruneError } = await admin.rpc("prune_notification_log");
+  if (pruneError) console.error("cleanup: failed to prune the email log", pruneError);
+  return NextResponse.json({ removedObjects: paths?.length ?? 0, prunedEmails: prunedEmails ?? 0 });
 }

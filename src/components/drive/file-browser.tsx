@@ -53,6 +53,7 @@ type DialogState =
 
 export function FileBrowser({
   items,
+  snippets,
   mode,
   currentUserId,
   uploadTarget,
@@ -60,6 +61,8 @@ export function FileBrowser({
   empty,
 }: {
   items: FileItem[];
+  /** File id → passage that matched a search, with matches marked. */
+  snippets?: Record<string, string>;
   mode: BrowserMode;
   currentUserId: string;
   /** Where dropped files go; omit when the user can't add files here. */
@@ -243,7 +246,7 @@ export function FileBrowser({
                 key={item.id}
                 aria-selected={isSelected}
                 className={cn(
-                  "group grid h-12 grid-cols-[2.5rem_minmax(0,1fr)_2.5rem] items-center border-b border-border sm:grid-cols-[2.5rem_minmax(0,1fr)_9rem_2.5rem] md:grid-cols-[2.5rem_minmax(0,1fr)_10rem_9rem_2.5rem] lg:grid-cols-[2.5rem_minmax(0,1fr)_10rem_9rem_6rem_2.5rem]",
+                  "group grid min-h-12 grid-cols-[2.5rem_minmax(0,1fr)_2.5rem] items-center border-b border-border sm:grid-cols-[2.5rem_minmax(0,1fr)_9rem_2.5rem] md:grid-cols-[2.5rem_minmax(0,1fr)_10rem_9rem_2.5rem] lg:grid-cols-[2.5rem_minmax(0,1fr)_10rem_9rem_6rem_2.5rem]",
                   isSelected ? "bg-primary-soft" : "hover:bg-surface-hover",
                 )}
               >
@@ -256,18 +259,23 @@ export function FileBrowser({
                     className="size-4 accent-primary"
                   />
                 </span>
-                <span role="cell" className="flex min-w-0 items-center gap-3 pr-2">
+                <span role="cell" className="flex min-w-0 items-center gap-3 py-1.5 pr-2">
                   <FileIcon kind={item.kind} name={item.name} mimeType={item.mimeType} />
-                  {inTrash ? (
-                    <span className="truncate">{item.name}</span>
-                  ) : (
-                    <Link href={itemHref(item)} className="truncate hover:underline" title={item.name}>
-                      {item.name}
-                    </Link>
-                  )}
-                  {item.starred && !inTrash ? (
-                    <Star className="size-3.5 shrink-0 fill-amber-400 text-amber-400" aria-label={t("actions.star")} />
-                  ) : null}
+                  <span className="flex min-w-0 flex-col">
+                    <span className="flex min-w-0 items-center gap-3">
+                      {inTrash ? (
+                        <span className="truncate">{item.name}</span>
+                      ) : (
+                        <Link href={itemHref(item)} className="truncate hover:underline" title={item.name}>
+                          {item.name}
+                        </Link>
+                      )}
+                      {item.starred && !inTrash ? (
+                        <Star className="size-3.5 shrink-0 fill-amber-400 text-amber-400" aria-label={t("actions.star")} />
+                      ) : null}
+                    </span>
+                    {snippets?.[item.id] ? <SearchSnippet text={snippets[item.id]} /> : null}
+                  </span>
                 </span>
                 <span role="cell" className="hidden truncate pr-2 text-muted md:block">
                   {owner}
@@ -464,5 +472,23 @@ function ItemMenu({
         )}
       </DropdownContent>
     </DropdownMenu>
+  );
+}
+
+/** A passage from inside a file, with the search matches (U+E000…U+E001) highlighted. */
+function SearchSnippet({ text }: { text: string }) {
+  const parts = text.split(/(\uE000[^\uE001]*\uE001)/);
+  return (
+    <span className="line-clamp-2 text-xs text-muted" data-testid="search-snippet">
+      {parts.map((part, index) =>
+        part.startsWith("\uE000") ? (
+          <mark key={index} className="rounded-sm bg-amber-100 text-foreground dark:bg-amber-500/30">
+            {part.slice(1, -1)}
+          </mark>
+        ) : (
+          part
+        ),
+      )}
+    </span>
   );
 }

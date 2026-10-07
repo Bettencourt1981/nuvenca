@@ -1,9 +1,13 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { siteUrl } from "@/lib/env";
 import { errorCode, fail, ok, type ActionResult } from "@/lib/errors";
+import { emailConfigured, sendEmail } from "@/lib/email/mailer";
+import { memberAddedEmail } from "@/lib/email/templates";
 import type { WorkspaceRole } from "@/lib/types";
 
 const id = z.string().uuid();
@@ -54,16 +58,46 @@ export async function addMember(input: {
   workspaceId: string;
   email: string;
   role: "admin" | "member";
+  /** The inviter's interface language (fallback for the email). */
+  locale?: string;
 }): Promise<ActionResult> {
-  const parsed = z.object({ workspaceId: id, email: z.string().trim().max(320), role: memberRole }).safeParse(input);
+  const parsed = z
+    .object({ workspaceId: id, email: z.string().trim().max(320), role: memberRole, locale: z.string().max(10).optional() })
+    .safeParse(input);
   if (!parsed.success) return fail("invalid_email");
   const supabase = await createClient();
-  const { error } = await supabase.rpc("add_workspace_member", {
+  const { data: member, error } = await supabase.rpc("add_workspace_member", {
     p_workspace_id: parsed.data.workspaceId,
     p_email: parsed.data.email,
     p_role: parsed.data.role,
   });
   if (error) return fail(errorCode(error));
+
+  if (emailConfigured()) {
+    const { data: details } = await supabase
+      .rpc("prepare_member_notification", { p_workspace_id: parsed.data.workspaceId, p_user_id: member.user_id })
+      .maybeSingle();
+    if (details) {
+      const email = memberAddedEmail(
+        {
+          recipient: details.recipient,
+          recipientLocale: details.recipient_locale,
+          workspaceName: details.workspace_name,
+          senderName: details.sender_name,
+          senderEmail: details.sender_email,
+          url: `${siteUrl()}/workspaces/${parsed.data.workspaceId}`,
+        },
+        parsed.data.locale,
+      );
+      after(async () => {
+        try {
+          await sendEmail(email);
+        } catch (sendError) {
+          console.error("Team email failed", sendError instanceof Error ? sendError.message : sendError);
+        }
+      });
+    }
+  }
   return ok(undefined);
 }
 

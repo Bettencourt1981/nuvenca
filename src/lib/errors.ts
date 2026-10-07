@@ -36,6 +36,7 @@ const KNOWN = new Set([
   "invalid_type",
   "invalid_comment",
   "unsupported_type",
+  "rate_limited",
 ]);
 
 /** Map a Supabase/PostgREST/Auth error to a translatable error code. */

@@ -1,12 +1,14 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { nullableArg } from "@/lib/supabase/rpc";
 import { STORAGE_BUCKET } from "@/lib/env";
 import { errorCode, fail, ok, type ActionResult } from "@/lib/errors";
+import { indexUploadedFile } from "@/lib/data/search-index";
 
 const id = z.string().uuid();
 const ids = z.array(id).min(1).max(500);
@@ -230,6 +232,8 @@ export async function finishUpload(input: { fileId: string; versionId: string })
     await removeObjects([version.storage_path]);
     return fail(errorCode(error));
   }
+  // Make the contents searchable once the response has been sent.
+  after(() => indexUploadedFile({ fileId: version.file_id, storagePath: version.storage_path, sizeBytes: info.size ?? 0 }));
   refresh();
   return ok(undefined);
 }

@@ -128,6 +128,7 @@
     "emptyTrash": "O lixo está vazio",
     "emptyTrashHint": "Os itens no lixo são eliminados definitivamente após {days} dias.",
     "emptySearch": "Sem resultados para “{query}”",
+    "emptySearchHint": "O Nuvenca pesquisa nos nomes dos ficheiros e no texto de documentos, folhas de cálculo, PDF e ficheiros do Office.",
     "searchResults": "Resultados para “{query}”",
     "searchTitle": "Pesquisa",
     "dropToUpload": "Largue os ficheiros para os carregar para {folder}",
@@ -186,7 +187,11 @@
       "viewer": "Leitor",
       "commenter": "Comentador",
       "editor": "Editor"
-    }
+    },
+    "notify": "Notificar por email",
+    "messagePlaceholder": "Mensagem (opcional)",
+    "sharedNotified": "Partilhado com {email}. Enviámos-lhe um email.",
+    "notifyLimited": "Partilhado, mas sem email: enviou muitos convites recentemente."
   },
   "file": {
     "noPreview": "Pré-visualização indisponível",
@@ -286,7 +291,14 @@
     "invalid_payload": "Não foi possível guardar a alteração.",
     "invalid_type": "Tipo de ficheiro não suportado.",
     "invalid_comment": "Escreva um comentário (até 5000 caracteres).",
-    "unsupported_type": "Este formato de imagem não é suportado."
+    "unsupported_type": "Este formato de imagem não é suportado.",
+    "rate_limited": "Foram enviados demasiados emails recentemente. Tente mais tarde.",
+    "google_unavailable": "Não foi possível contactar o Google Drive. Verifique a ligação ou o bloqueador de anúncios.",
+    "google_denied": "O acesso ao Google Drive não foi autorizado.",
+    "google_failed": "O Google Drive não aceitou o pedido. Tente novamente.",
+    "google_too_large": "Este ficheiro é demasiado grande para o Google converter (mais de 10 MB).",
+    "google_unsupported": "Este tipo de ficheiro do Google não pode ser importado (por exemplo Formulários ou Sites).",
+    "import_failed": "Não foi possível importar o ficheiro."
   },
   "editor": {
     "backToDrive": "Voltar ao Nuvenca",
@@ -531,6 +543,37 @@
         "cut": "Cortar",
         "copy": "Copiar"
       }
+    },
+    "saveToGoogle": "Guardar no Google Drive"
+  },
+  "email": {
+    "fileShared": {
+      "subjectFile": "{name} partilhou “{item}” consigo",
+      "subjectFolder": "{name} partilhou a pasta “{item}” consigo",
+      "intro": "{name} ({email}) partilhou {kind, select, folder {uma pasta} document {um documento} spreadsheet {uma folha de cálculo} other {um ficheiro}} consigo no Nuvenca.",
+      "role": "{role, select, editor {Pode editar.} commenter {Pode ver e adicionar comentários.} other {Pode ver.}}",
+      "messageLabel": "Mensagem de {name}:",
+      "open": "Abrir",
+      "signUp": "Criar conta gratuita",
+      "signUpHint": "Para abrir, registe-se no Nuvenca com este endereço de email: {email}.",
+      "footer": "Recebeu este email porque algo foi partilhado com {email} no Nuvenca."
+    },
+    "member": {
+      "subject": "{name} deu-lhe acesso à equipa “{workspace}”",
+      "intro": "{name} ({email}) deu-lhe acesso à área de equipa “{workspace}” no Nuvenca.",
+      "body": "Já pode ver e trabalhar nos ficheiros da equipa.",
+      "open": "Abrir a equipa",
+      "footer": "Recebeu este email porque {email} passou a ter acesso a uma equipa no Nuvenca."
     }
+  },
+  "google": {
+    "import": "Importar do Google Drive",
+    "pickerTitle": "Escolha os ficheiros a importar para o Nuvenca",
+    "importing": "A importar {count, plural, one {# ficheiro} other {# ficheiros}} do Google Drive…",
+    "imported": "{count, plural, one {# ficheiro importado} other {# ficheiros importados}}. Os Documentos e Folhas do Google já podem ser editados no Nuvenca.",
+    "importFailed": "{count, plural, one {Não foi possível importar # ficheiro} other {Não foi possível importar # ficheiros}}",
+    "saving": "A guardar no Google Drive…",
+    "saved": "Guardado no seu Google Drive.",
+    "openInGoogle": "Abrir"
   }
 }

@@ -72,7 +72,7 @@ export function TopBar({
             {t("settings")}
           </DropdownItem>
           <div className="px-3 py-1.5">
-            <LanguageSwitcher />
+            <LanguageSwitcher persist />
           </div>
           <DropdownSeparator />
           <DropdownItem icon={<LogOut />} onSelect={() => void signOut()}>

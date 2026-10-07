@@ -13,6 +13,7 @@ import { DropdownContent, DropdownItem, DropdownMenu, DropdownSeparator, Dropdow
 import { NameDialog } from "./name-dialog";
 import { ShareDialog } from "./share-dialog";
 import { useUploads, type UploadTarget } from "./upload-provider";
+import { GoogleDriveImportItem } from "@/components/google/google-drive";
 
 /** "New" menu (folder, upload, editors) and the current folder's Share button. */
 export function FolderToolbar({
@@ -75,6 +76,7 @@ export function FolderToolbar({
               <DropdownItem icon={<Upload />} onSelect={() => fileInput.current?.click()}>
                 {t("uploadFiles")}
               </DropdownItem>
+              <GoogleDriveImportItem target={target} />
               <DropdownSeparator />
               <DropdownItem icon={<FileText className="text-blue-600" />} onSelect={() => createNative("document")}>
                 {t("newDocument")}

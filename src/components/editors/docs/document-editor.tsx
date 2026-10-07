@@ -11,6 +11,7 @@ import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import { CharacterCount, Placeholder } from "@tiptap/extensions";
 import { yDocToProsemirrorJSON } from "@tiptap/y-tiptap";
 import {
+  CloudUpload,
   Download,
   FilePlus2,
   History,
@@ -30,11 +31,12 @@ import { useRouter } from "@/i18n/navigation";
 import { colorFor } from "@/lib/collab/colors";
 import { toBase64 } from "@/lib/collab/base64";
 import { createClient } from "@/lib/supabase/client";
-import { createNativeFile } from "@/lib/actions/documents";
+import { compactDocument, createNativeFile } from "@/lib/actions/documents";
 import { trashItems } from "@/lib/actions/drive";
 import { documentExtensions, DOCUMENT_FIELD } from "@/lib/editors/docs/extensions";
 import { uploadDocumentImage } from "@/lib/editors/docs/assets";
 import { docxToHtml } from "@/lib/editors/docs/import-docx";
+import { PreloadGoogle, useSaveToGoogleDrive } from "@/components/google/google-drive";
 import { useErrorMessage } from "@/hooks/use-error-message";
 import { ACCESS } from "@/lib/types";
 import { DropdownContent, DropdownItem, DropdownMenu, DropdownSeparator, DropdownTrigger } from "@/components/ui/dropdown";
@@ -78,7 +80,12 @@ export function DocumentEditor({
   const searchParams = useSearchParams();
   const canEdit = file.accessLevel >= ACCESS.editor;
   const canComment = file.accessLevel >= ACCESS.commenter;
-  const { doc, provider, status, saveStatus, synced, peers, error } = useCollaboration({ fileId: file.id, canEdit, user });
+  const { doc, provider, status, saveStatus, synced, peers, error } = useCollaboration({
+    fileId: file.id,
+    type: "document",
+    canEdit,
+    user,
+  });
 
   const [panel, setPanel] = useState<Panel>(null);
   const [activeThread, setActiveThread] = useState<string | null>(null);
@@ -160,6 +167,7 @@ export function DocumentEditor({
         const html = await docxToHtml(await response.arrayBuffer(), (image) => uploadDocumentImage(file.id, image));
         editor.commands.setContent(html);
         await provider.flushSave();
+        await compactDocument({ fileId: file.id }); // size and quota reflect the import
         await createVersion(t("history.imported"));
       } catch {
         toast.error(t("importFailed"));
@@ -213,6 +221,9 @@ export function DocumentEditor({
     link.click();
   }, [provider, file.id]);
 
+  const flushSave = useCallback(() => provider.flushSave(), [provider]);
+  const saveToGoogle = useSaveToGoogleDrive({ fileId: file.id, name: file.name, type: "document", beforeExport: flushSave });
+
   const newDocument = useCallback(async () => {
     const result = await createNativeFile({ ...location, name: t("docs.untitled"), type: "document" });
     if (!result.ok) return void toast.error(message(result.error));
@@ -240,6 +251,7 @@ export function DocumentEditor({
       canComment={canComment}
       onNew={newDocument}
       onDownload={download}
+      onSaveToGoogle={saveToGoogle}
       onHistory={() => setPanel("history")}
       onLink={() => setLinkOpen(true)}
       onComment={startComment}
@@ -387,6 +399,7 @@ function DocumentMenus({
   canComment,
   onNew,
   onDownload,
+  onSaveToGoogle,
   onHistory,
   onLink,
   onComment,
@@ -398,6 +411,7 @@ function DocumentMenus({
   canComment: boolean;
   onNew: () => void;
   onDownload: () => void;
+  onSaveToGoogle: (() => void) | null;
   onHistory: () => void;
   onLink: () => void;
   onComment: () => void;
@@ -429,6 +443,14 @@ function DocumentMenus({
                   <DropdownItem icon={<Download />} onSelect={onDownload}>
                     {t("docs.downloadDocx")}
                   </DropdownItem>
+                  {onSaveToGoogle ? (
+                    <>
+                      <PreloadGoogle />
+                      <DropdownItem icon={<CloudUpload />} onSelect={onSaveToGoogle}>
+                        {t("saveToGoogle")}
+                      </DropdownItem>
+                    </>
+                  ) : null}
                   <DropdownItem icon={<Printer />} onSelect={() => window.print()}>
                     {t("docs.printPdf")}
                   </DropdownItem>

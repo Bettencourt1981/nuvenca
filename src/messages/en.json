@@ -128,6 +128,7 @@
     "emptyTrash": "Trash is empty",
     "emptyTrashHint": "Items in the trash are deleted forever after {days} days.",
     "emptySearch": "No results for “{query}”",
+    "emptySearchHint": "Nuvenca searches file names and the text inside documents, spreadsheets, PDFs and Office files.",
     "searchResults": "Results for “{query}”",
     "searchTitle": "Search",
     "dropToUpload": "Drop files to upload them to {folder}",
@@ -186,7 +187,11 @@
       "viewer": "Viewer",
       "commenter": "Commenter",
       "editor": "Editor"
-    }
+    },
+    "notify": "Notify people by email",
+    "messagePlaceholder": "Message (optional)",
+    "sharedNotified": "Shared with {email}. We sent them an email.",
+    "notifyLimited": "Shared, but no email was sent: you have sent many invitations recently."
   },
   "file": {
     "noPreview": "No preview available",
@@ -286,7 +291,14 @@
     "invalid_payload": "The change couldn't be saved.",
     "invalid_type": "Unsupported file type.",
     "invalid_comment": "Please write a comment (up to 5000 characters).",
-    "unsupported_type": "This image format isn't supported."
+    "unsupported_type": "This image format isn't supported.",
+    "rate_limited": "Too many emails sent recently. Try again later.",
+    "google_unavailable": "Google Drive couldn't be reached. Check your connection or ad blocker.",
+    "google_denied": "Access to Google Drive wasn't granted.",
+    "google_failed": "Google Drive didn't accept the request. Try again.",
+    "google_too_large": "This file is too large for Google to convert (over 10 MB).",
+    "google_unsupported": "This kind of Google file can't be imported (for example Forms or Sites).",
+    "import_failed": "The file couldn't be imported."
   },
   "editor": {
     "backToDrive": "Back to Nuvenca",
@@ -531,6 +543,37 @@
         "cut": "Cut",
         "copy": "Copy"
       }
+    },
+    "saveToGoogle": "Save to Google Drive"
+  },
+  "email": {
+    "fileShared": {
+      "subjectFile": "{name} shared “{item}” with you",
+      "subjectFolder": "{name} shared the folder “{item}” with you",
+      "intro": "{name} ({email}) shared {kind, select, folder {a folder} document {a document} spreadsheet {a spreadsheet} other {a file}} with you on Nuvenca.",
+      "role": "{role, select, editor {You can edit it.} commenter {You can view it and add comments.} other {You can view it.}}",
+      "messageLabel": "Message from {name}:",
+      "open": "Open",
+      "signUp": "Create your free account",
+      "signUpHint": "To open it, sign up to Nuvenca with this email address: {email}.",
+      "footer": "You received this email because something was shared with {email} on Nuvenca."
+    },
+    "member": {
+      "subject": "{name} added you to the team “{workspace}”",
+      "intro": "{name} ({email}) gave you access to the team workspace “{workspace}” on Nuvenca.",
+      "body": "You can now see and work on the team's files.",
+      "open": "Open the team",
+      "footer": "You received this email because {email} was added to a team on Nuvenca."
     }
+  },
+  "google": {
+    "import": "Import from Google Drive",
+    "pickerTitle": "Choose files to import into Nuvenca",
+    "importing": "Importing {count, plural, one {# file} other {# files}} from Google Drive…",
+    "imported": "{count, plural, one {Imported # file} other {Imported # files}}. Google Docs and Sheets are now editable in Nuvenca.",
+    "importFailed": "{count, plural, one {# file couldn't be imported} other {# files couldn't be imported}}",
+    "saving": "Saving to Google Drive…",
+    "saved": "Saved to your Google Drive.",
+    "openInGoogle": "Open"
   }
 }

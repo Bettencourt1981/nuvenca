@@ -177,6 +177,32 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"file_contents": {
+                  Row: {
+                    "content": string,"file_id": string,"search": unknown,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "content": string,"file_id": string,"search"?: never,"updated_at"?: string
+                  }
+                  Update: {
+                    "content"?: string,"file_id"?: string,"search"?: never,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "file_contents_file_id_fkey"
+      columns: ["file_id"]
+isOneToOne: true
+      referencedRelation: "drive_items"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "file_contents_file_id_fkey"
+      columns: ["file_id"]
+isOneToOne: true
+      referencedRelation: "files"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"file_shares": {
                   Row: {
                     "created_at": string,"created_by": string | null,"email": string,"file_id": string,"id": string,"role": Database["public"]['Enums']["share_role"],"updated_at": string,"user_id": string | null
@@ -293,6 +319,38 @@ isOneToOne: false
       referencedColumns: ["id"]
     },{
       foreignKeyName: "files_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"notification_emails": {
+                  Row: {
+                    "created_at": string,"file_id": string | null,"id": number,"kind": string,"recipient": string,"sender_id": string | null,"workspace_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"file_id"?: string | null,"id"?: never,"kind": string,"recipient": string,"sender_id"?: string | null,"workspace_id"?: string | null
+                  }
+                  Update: {
+                    "created_at"?: string,"file_id"?: string | null,"id"?: never,"kind"?: string,"recipient"?: string,"sender_id"?: string | null,"workspace_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "notification_emails_file_id_fkey"
+      columns: ["file_id"]
+isOneToOne: false
+      referencedRelation: "drive_items"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notification_emails_file_id_fkey"
+      columns: ["file_id"]
+isOneToOne: false
+      referencedRelation: "files"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notification_emails_workspace_id_fkey"
       columns: ["workspace_id"]
 isOneToOne: false
       referencedRelation: "workspaces"
@@ -727,11 +785,27 @@ isOneToOne: false
 "load_document":
 { Args: { "p_file_id": string }; Returns: Json
                            },
+"max_indexed_chars":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
 "move_files":
 { Args: { "p_file_ids": (string)[],"p_target_parent_id": string }; Returns: number
                            },
+"prepare_member_notification":
+{ Args: { "p_user_id": string,"p_workspace_id": string }; Returns: {
+              "recipient": string,"recipient_locale": string,"sender_email": string,"sender_name": string,"workspace_name": string
+            }[]
+                           },
+"prepare_share_notification":
+{ Args: { "p_share_id": string }; Returns: {
+              "file_id": string,"file_kind": Database["public"]['Enums']["file_kind"],"file_mime": string,"file_name": string,"has_account": boolean,"recipient": string,"recipient_locale": string,"role": Database["public"]['Enums']["share_role"],"sender_email": string,"sender_name": string
+            }[]
+                           },
 "profile_display_name":
 { Args: { "p_user_id": string }; Returns: string
+                           },
+"prune_notification_log":
+{ Args: Record<PropertyKey, never>; Returns: number
                            },
 "purge_expired_items":
 { Args: Record<PropertyKey, never>; Returns: (string)[]
@@ -791,6 +865,9 @@ isOneToOne: false
 "require_user":
 { Args: Record<PropertyKey, never>; Returns: string
                            },
+"reserve_notification_email":
+{ Args: { "p_file_id": string,"p_kind": string,"p_recipient": string,"p_workspace_id": string }; Returns: undefined
+                           },
 "resolve_comment":
 { Args: { "p_comment_id": string,"p_resolved": boolean }; Returns: undefined
                            },
@@ -799,6 +876,14 @@ isOneToOne: false
                            },
 "restore_files":
 { Args: { "p_file_ids": (string)[] }; Returns: number
+                           },
+"search_files":
+{ Args: { "p_query": string }; Returns: {
+              "file_id": string,"name_match": boolean,"snippet": string
+            }[]
+                           },
+"set_file_content":
+{ Args: { "p_content": string,"p_file_id": string }; Returns: undefined
                            },
 "set_share_link":
 { Args: { "p_enabled": boolean,"p_file_id": string,"p_role": Database["public"]['Enums']["share_role"] }; Returns: {

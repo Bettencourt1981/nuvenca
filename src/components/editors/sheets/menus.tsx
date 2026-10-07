@@ -6,6 +6,7 @@ import {
   ArrowDownAZ,
   ArrowUpAZ,
   ChartColumn,
+  CloudUpload,
   Copy,
   Download,
   FilePlus2,
@@ -20,6 +21,7 @@ import {
 } from "lucide-react";
 import { DropdownContent, DropdownItem, DropdownMenu, DropdownSeparator, DropdownTrigger } from "@/components/ui/dropdown";
 import { columnName, type CellPos } from "@/lib/editors/sheets/address";
+import { PreloadGoogle } from "@/components/google/google-drive";
 import { NUMBER_FORMATS } from "@/lib/editors/sheets/format";
 import { MenuBarButton } from "../editor-header";
 import type { SheetCommand } from "./toolbar";
@@ -48,6 +50,7 @@ export function SheetMenus({
   onNew,
   onDownloadXlsx,
   onDownloadCsv,
+  onSaveToGoogle,
   onHistory,
   onTrash,
   onFreeze,
@@ -63,6 +66,8 @@ export function SheetMenus({
   onNew: () => void;
   onDownloadXlsx: () => void;
   onDownloadCsv: () => void;
+  /** "Save to Google Drive" (absent when Google isn't configured). */
+  onSaveToGoogle?: (() => void) | null;
   onHistory: () => void;
   onTrash: () => void;
   onFreeze: (rows: number, cols: number) => void;
@@ -87,6 +92,14 @@ export function SheetMenus({
         <DropdownItem icon={<Download />} onSelect={onDownloadCsv}>
           {ts("downloadCsv")}
         </DropdownItem>
+        {onSaveToGoogle ? (
+          <>
+            <PreloadGoogle />
+            <DropdownItem icon={<CloudUpload />} onSelect={onSaveToGoogle}>
+              {t("saveToGoogle")}
+            </DropdownItem>
+          </>
+        ) : null}
         <DropdownItem icon={<Printer />} onSelect={() => onCommand({ type: "print" })}>
           {t("docs.printPdf")}
         </DropdownItem>

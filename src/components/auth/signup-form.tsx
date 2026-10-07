@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { MailCheck } from "lucide-react";
 import { Link } from "@/i18n/navigation";
@@ -15,6 +16,8 @@ export function SignupForm() {
   const t = useTranslations("auth");
   const locale = useLocale();
   const message = useErrorMessage();
+  // Invitation emails link here with the invited address filled in.
+  const invitedEmail = useSearchParams().get("email") ?? undefined;
   const [error, setError] = useState<string | null>(null);
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -60,7 +63,7 @@ export function SignupForm() {
         </div>
         <div>
           <Label htmlFor="email">{t("email")}</Label>
-          <Input id="email" name="email" type="email" autoComplete="email" required />
+          <Input id="email" name="email" type="email" autoComplete="email" required defaultValue={invitedEmail} />
         </div>
         <div>
           <Label htmlFor="password">{t("password")}</Label>

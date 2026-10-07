@@ -9,7 +9,7 @@ import { Filter as FilterIcon } from "lucide-react";
 import { useRouter } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { toBase64 } from "@/lib/collab/base64";
-import { createNativeFile } from "@/lib/actions/documents";
+import { compactDocument, createNativeFile } from "@/lib/actions/documents";
 import { trashItems } from "@/lib/actions/drive";
 import { useErrorMessage } from "@/hooks/use-error-message";
 import { ACCESS } from "@/lib/types";
@@ -59,6 +59,7 @@ import {
 import { sheetToHtml } from "@/lib/editors/sheets/html";
 import { toCsv } from "@/lib/editors/sheets/csv";
 import { csvToDoc, xlsxToDoc } from "@/lib/editors/sheets/import-xlsx";
+import { useSaveToGoogleDrive } from "@/components/google/google-drive";
 import { EditorHeader, type EditorFile } from "../editor-header";
 import { useCollaboration, type CollabUser } from "../use-collaboration";
 import { CommentsPanel, useComments } from "../comments";
@@ -111,7 +112,12 @@ export function SpreadsheetEditor({
   const searchParams = useSearchParams();
   const canEdit = file.accessLevel >= ACCESS.editor;
   const canComment = file.accessLevel >= ACCESS.commenter;
-  const { doc, provider, status, saveStatus, synced, peers, error } = useCollaboration({ fileId: file.id, canEdit, user });
+  const { doc, provider, status, saveStatus, synced, peers, error } = useCollaboration({
+    fileId: file.id,
+    type: "spreadsheet",
+    canEdit,
+    user,
+  });
 
   // ---------------------------------------------------------------------------
   // Workbook state
@@ -680,6 +686,7 @@ export function SpreadsheetEditor({
         imported.destroy();
         undo.clear();
         await provider.flushSave();
+        await compactDocument({ fileId: file.id }); // size and quota reflect the import
         await createVersion(t("history.imported"));
       } catch {
         toast.error(t("importFailed"));
@@ -695,6 +702,9 @@ export function SpreadsheetEditor({
     link.href = `/api/files/${file.id}/download`;
     link.click();
   }, [provider, file.id]);
+
+  const flushSave = useCallback(() => provider.flushSave(), [provider]);
+  const saveToGoogle = useSaveToGoogleDrive({ fileId: file.id, name: file.name, type: "spreadsheet", beforeExport: flushSave });
 
   const downloadCsv = useCallback(() => {
     if (!sheet || !sheetId) return;
@@ -812,6 +822,7 @@ export function SpreadsheetEditor({
       onNew={newSpreadsheet}
       onDownloadXlsx={downloadXlsx}
       onDownloadCsv={downloadCsv}
+      onSaveToGoogle={saveToGoogle}
       onHistory={() => setPanel("history")}
       onTrash={async () => {
         const result = await trashItems({ ids: [file.id] });

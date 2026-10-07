@@ -11,6 +11,7 @@ import { errorCode, fail, ok, type ActionResult } from "@/lib/errors";
 import { fromBase64, toBase64 } from "@/lib/collab/base64";
 import { EMPTY_YJS_STATE_BASE64, importableAs, stripExtension } from "@/lib/editors/native";
 import { initWorkbook } from "@/lib/editors/sheets/model";
+import { indexNativeState } from "@/lib/data/search-index";
 
 const id = z.string().uuid();
 
@@ -53,6 +54,7 @@ export async function createNativeFile(input: {
     p_state: state ?? EMPTY_YJS_STATE_BASE64,
   });
   if (error) return fail(errorCode(error));
+  if (parsed.data.state) await indexNativeState(supabase, data.id, parsed.data.type, parsed.data.state);
   refresh();
   return ok({ id: data.id });
 }

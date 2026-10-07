@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Check, Globe2, Link2, Lock, Trash2 } from "lucide-react";
 import {
@@ -35,12 +35,15 @@ export function ShareDialog({
 }) {
   const t = useTranslations("share");
   const common = useTranslations("common");
+  const locale = useLocale();
   const message = useErrorMessage();
   // Callers mount this dialog only while it is open, so state starts fresh.
   const [loaded, setLoaded] = useState<Awaited<ReturnType<typeof getShareSettings>> | null>(null);
   const [version, setVersion] = useState(0);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<ShareRole>("viewer");
+  const [notify, setNotify] = useState(true);
+  const [note, setNote] = useState("");
   const [copied, setCopied] = useState(false);
   const [pending, startTransition] = useTransition();
 
@@ -92,43 +95,80 @@ export function ShareDialog({
         <div className="space-y-6">
           {canManage ? (
             <form
-              className="flex flex-col gap-2 sm:flex-row"
+              className="flex flex-col gap-2"
               onSubmit={(event) => {
                 event.preventDefault();
                 const value = email.trim();
                 if (!value) return;
                 run(async () => {
-                  const result = await shareWithEmail({ fileId, email: value, role });
-                  if (result.ok) setEmail("");
+                  const result = await shareWithEmail({
+                    fileId,
+                    email: value,
+                    role,
+                    notify: settings.canNotify && notify,
+                    message: notify ? note : undefined,
+                    locale,
+                  });
+                  if (!result.ok) return result;
+                  setEmail("");
+                  setNote("");
+                  if (result.data.limited) toast.warning(t("notifyLimited"));
+                  else toast.success(result.data.notified ? t("sharedNotified", { email: value }) : t("shared", { email: value }));
                   return result;
-                }, t("shared", { email: value }));
+                });
               }}
             >
-              <Input
-                type="email"
-                placeholder={t("addPeople")}
-                aria-label={t("addPeople")}
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                className="flex-1"
-              />
-              <div className="flex gap-2">
-                <Select
-                  value={role}
-                  onChange={(event) => setRole(event.target.value as ShareRole)}
-                  className="w-auto"
-                  aria-label={t("generalAccess")}
-                >
-                  {ROLES.map((value) => (
-                    <option key={value} value={value}>
-                      {t(`roles.${value}`)}
-                    </option>
-                  ))}
-                </Select>
-                <Button type="submit" disabled={pending || !email.trim()}>
-                  {t("add")}
-                </Button>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  type="email"
+                  placeholder={t("addPeople")}
+                  aria-label={t("addPeople")}
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  className="flex-1"
+                />
+                <div className="flex gap-2">
+                  <Select
+                    value={role}
+                    onChange={(event) => setRole(event.target.value as ShareRole)}
+                    className="w-auto"
+                    aria-label={t("generalAccess")}
+                  >
+                    {ROLES.map((value) => (
+                      <option key={value} value={value}>
+                        {t(`roles.${value}`)}
+                      </option>
+                    ))}
+                  </Select>
+                  <Button type="submit" disabled={pending || !email.trim()}>
+                    {t("add")}
+                  </Button>
+                </div>
               </div>
+              {settings.canNotify && email.trim() ? (
+                <>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={notify}
+                      onChange={(event) => setNotify(event.target.checked)}
+                      className="size-4 accent-primary"
+                    />
+                    {t("notify")}
+                  </label>
+                  {notify ? (
+                    <textarea
+                      value={note}
+                      onChange={(event) => setNote(event.target.value)}
+                      placeholder={t("messagePlaceholder")}
+                      aria-label={t("messagePlaceholder")}
+                      maxLength={1000}
+                      rows={3}
+                      className="w-full resize-y rounded-lg border border-border bg-surface px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                    />
+                  ) : null}
+                </>
+              ) : null}
             </form>
           ) : null}
 

@@ -169,21 +169,30 @@ export async function listTrash(workspaceId: string): Promise<FileItem[]> {
   return (data ?? []).map(toItem);
 }
 
-export async function searchItems(query: string): Promise<FileItem[]> {
+export type SearchResult = { items: FileItem[]; snippets: Record<string, string> };
+
+/**
+ * Names and contents of everything the user can open. Name matches come first;
+ * `snippets` holds the matching passage for content matches.
+ */
+export async function searchItems(query: string): Promise<SearchResult> {
   const term = query.trim().slice(0, 100);
-  if (!term) return [];
+  if (!term) return { items: [], snippets: {} };
   const supabase = await createClient();
-  const escaped = term.replace(/[\\%_]/g, (c) => `\\${c}`);
-  const { data, error } = await supabase
+  const { data: matches, error } = await supabase.rpc("search_files", { p_query: term });
+  if (error) throw error;
+  if (!matches?.length) return { items: [], snippets: {} };
+
+  const { data, error: itemsError } = await supabase
     .from("drive_items")
     .select(ITEM_COLUMNS)
-    .ilike("name", `%${escaped}%`)
-    .eq("in_trash", false)
-    .eq("status", "ready")
-    .order("updated_at", { ascending: false })
-    .limit(100);
-  if (error) throw error;
-  return (data ?? []).map(toItem);
+    .in("id", matches.map((m) => m.file_id));
+  if (itemsError) throw itemsError;
+  const byId = new Map((data ?? []).map((row) => [row.id!, toItem(row)]));
+  const items = matches.map((m) => byId.get(m.file_id)).filter((item): item is FileItem => Boolean(item));
+  const snippets: Record<string, string> = {};
+  for (const m of matches) if (m.snippet) snippets[m.file_id] = m.snippet;
+  return { items, snippets };
 }
 
 export const getProfile = cache(async () => {

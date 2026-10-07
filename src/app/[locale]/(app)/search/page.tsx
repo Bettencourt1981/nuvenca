@@ -21,13 +21,14 @@ export default function SearchPage({ searchParams }: PageProps<"/[locale]/search
 async function Results({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { q } = await searchParams;
   const query = (Array.isArray(q) ? q[0] : q)?.trim() ?? "";
-  const [items, t] = await Promise.all([searchItems(query), getTranslations("drive")]);
+  const [{ items, snippets }, t] = await Promise.all([searchItems(query), getTranslations("drive")]);
   return (
     <ListView
       title={query ? t("searchResults", { query }) : t("searchTitle")}
       items={items}
+      snippets={snippets}
       mode="search"
-      empty={{ icon: <SearchX className="size-12" />, title: t("emptySearch", { query }) }}
+      empty={{ icon: <SearchX className="size-12" />, title: t("emptySearch", { query }), hint: t("emptySearchHint") }}
     />
   );
 }
