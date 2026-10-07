@@ -8,15 +8,13 @@ import { createClient } from "@/lib/supabase/server";
 import { siteUrl } from "@/lib/env";
 import { errorCode, fail, ok, type ActionResult } from "@/lib/errors";
 import { routing } from "@/i18n/routing";
+import { safeNextPath } from "@/lib/safe-redirect";
 
 const email = z.string().trim().toLowerCase().email().max(320);
 const password = z.string().min(8).max(72);
 const locale = z.enum(routing.locales);
 
-/** Only allow redirects to paths inside the app. */
-function safeNext(next: unknown): string {
-  return typeof next === "string" && next.startsWith("/") && !next.startsWith("//") ? next : "/drive";
-}
+const safeNext = (next: unknown) => safeNextPath(next);
 
 async function origin(): Promise<string> {
   const h = await headers();
