@@ -13,6 +13,7 @@ import { FilePreview } from "@/components/drive/file-preview";
 import { FileActions } from "@/components/drive/file-actions";
 import { ListSkeleton, PageContainer, workspaceLabels } from "@/components/drive/views";
 import { downloadHref } from "@/lib/links";
+import { nativeType } from "@/lib/editors/native";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/file/[fileId]">): Promise<Metadata> {
   const { fileId } = await params;
@@ -43,6 +44,8 @@ async function FileView({ params }: { params: Promise<{ fileId: string }> }) {
     );
   }
   if (file.kind === "folder") redirect(`/drive/folders/${file.id}`);
+  const native = nativeType(file.mimeType);
+  if (native) redirect(`/${native}/${file.id}`);
 
   const [ancestors, workspaces, format, locale, nav] = await Promise.all([
     getAncestors(file),
@@ -101,6 +104,7 @@ async function FileView({ params }: { params: Promise<{ fileId: string }> }) {
           sizeBytes={file.sizeBytes}
           src={`${download}?inline=1`}
           downloadHref={download}
+          sourceId={file.id}
         />
         <aside className="h-fit rounded-xl border border-border bg-surface p-5">
           <h2 className="mb-4 font-semibold">{t("details")}</h2>

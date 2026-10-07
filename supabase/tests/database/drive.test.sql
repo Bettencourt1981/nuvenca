@@ -38,8 +38,6 @@ begin
   perform set_config('role', 'postgres', true);
   perform set_config('request.jwt.claims', '', true);
 end $$;
-grant execute on all functions in schema tests to authenticated;
-
 create function tests.personal_ws(p_user_id uuid) returns uuid language sql security definer as $$
   select id from public.workspaces where owner_id = p_user_id and kind = 'personal'
 $$;
@@ -55,6 +53,8 @@ begin
   perform public.complete_upload(v_version, p_size, 'text/plain');
   return v_file;
 end $$;
+
+grant execute on all functions in schema tests to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Sign-up provisioning

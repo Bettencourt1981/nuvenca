@@ -10,6 +10,12 @@ import { Logo } from "@/components/logo";
 import { buttonClasses } from "@/components/ui/button";
 import { FileIcon } from "@/components/drive/file-icon";
 import { FilePreview } from "@/components/drive/file-preview";
+import { DocumentViewer } from "@/components/editors/docs/document-viewer";
+import { SpreadsheetViewer } from "@/components/editors/sheets/spreadsheet-viewer";
+import { JoinLinkButton } from "@/components/editors/join-link-button";
+import { nativeType } from "@/lib/editors/native";
+import { loadStateAsAdmin } from "@/lib/data/native";
+import { toBase64 } from "@/lib/collab/base64";
 
 type Props = PageProps<"/[locale]/s/[token]">;
 
@@ -92,6 +98,48 @@ async function SharedContent({ params, searchParams }: Pick<Props, "params" | "s
       </ol>
     </nav>
   ) : null;
+
+  const native = item.kind === "file" ? nativeType(item.mimeType) : null;
+  if (native) {
+    const [state, user] = await Promise.all([loadStateAsAdmin(item.id), getCurrentUser()]);
+    const collaborative = share.role !== "viewer" && share.item.id === share.root.id;
+    return (
+      <div>
+        {breadcrumbs}
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <FileIcon kind="file" name={item.name} mimeType={item.mimeType} className="size-6" />
+            <h1 className="truncate text-xl font-medium">{item.name}</h1>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {collaborative ? (
+              user ? (
+                <JoinLinkButton token={token} role={share.role as "commenter" | "editor"} />
+              ) : (
+                <Link href={`/login?next=${encodeURIComponent(base)}`} className={buttonClasses()}>
+                  {share.role === "editor" ? t("signInToEdit") : t("signInToComment")}
+                </Link>
+              )
+            ) : null}
+            <a href={download(item.id)} className={buttonClasses({ variant: collaborative ? "secondary" : "primary" })}>
+              <Download className="size-4" />
+              {actions("download")}
+            </a>
+          </div>
+        </div>
+        {native === "document" && state ? (
+          <div className="doc-scroller overflow-hidden rounded-xl border border-border">
+            <div className="doc-page">
+              <DocumentViewer state={toBase64(state)} assetQuery={`share=${token}`} />
+            </div>
+          </div>
+        ) : native === "spreadsheet" && state ? (
+          <SpreadsheetViewer state={toBase64(state)} />
+        ) : null}
+        <p className="mt-6 text-center text-xs text-muted">{t("sharedBy")}</p>
+      </div>
+    );
+  }
 
   if (item.kind === "file") {
     return (

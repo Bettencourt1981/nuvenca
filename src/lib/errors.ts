@@ -31,6 +31,11 @@ const KNOWN = new Set([
   "weak_password",
   "over_email_send_rate_limit",
   "same_password",
+  "not_native",
+  "invalid_payload",
+  "invalid_type",
+  "invalid_comment",
+  "unsupported_type",
 ]);
 
 /** Map a Supabase/PostgREST/Auth error to a translatable error code. */

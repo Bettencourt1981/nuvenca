@@ -12,7 +12,7 @@ export default function LandingPage() {
   const features = [
     { icon: Cloud, title: t("features.driveTitle"), text: t("features.driveText") },
     { icon: Share2, title: t("features.shareTitle"), text: t("features.shareText") },
-    { icon: FileSpreadsheet, title: t("features.editorsTitle"), text: t("features.editorsText"), soon: true },
+    { icon: FileSpreadsheet, title: t("features.editorsTitle"), text: t("features.editorsText"), soon: false },
   ];
 
   return (

@@ -34,6 +34,8 @@ export type FileCategory =
 export function fileCategory(kind: "folder" | "file", name: string, mimeType: string | null): FileCategory {
   if (kind === "folder") return "folder";
   const mime = mimeType ?? "";
+  if (mime === "application/vnd.nuvenca.document") return "document";
+  if (mime === "application/vnd.nuvenca.spreadsheet") return "spreadsheet";
   if (mime.startsWith("image/")) return "image";
   if (mime.startsWith("video/")) return "video";
   if (mime.startsWith("audio/")) return "audio";

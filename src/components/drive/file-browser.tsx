@@ -7,6 +7,8 @@ import {
   ArchiveRestore,
   Download,
   ExternalLink,
+  FileSpreadsheet,
+  FileText,
   FolderInput,
   MoreVertical,
   Pencil,
@@ -28,6 +30,8 @@ import {
 import { useErrorMessage } from "@/hooks/use-error-message";
 import { cn, formatBytes } from "@/lib/utils";
 import { downloadHref, itemHref } from "@/lib/links";
+import { importableAs } from "@/lib/editors/native";
+import { useOpenWithNuvenca } from "./open-with";
 import { ACCESS, type FileItem } from "@/lib/types";
 import { DropdownContent, DropdownItem, DropdownMenu, DropdownSeparator, DropdownTrigger } from "@/components/ui/dropdown";
 import { Button } from "@/components/ui/button";
@@ -389,8 +393,10 @@ function ItemMenu({
 }) {
   const t = useTranslations("drive.actions");
   const router = useRouter();
+  const openWith = useOpenWithNuvenca();
   const canEdit = item.accessLevel >= ACCESS.editor;
   const isMember = item.accessLevel >= ACCESS.manager;
+  const importable = item.kind === "file" ? importableAs(item.name, item.mimeType) : null;
 
   return (
     <DropdownMenu>
@@ -414,6 +420,14 @@ function ItemMenu({
             <DropdownItem icon={<ExternalLink />} onSelect={() => router.push(itemHref(item))}>
               {t("open")}
             </DropdownItem>
+            {importable ? (
+              <DropdownItem
+                icon={importable === "document" ? <FileText /> : <FileSpreadsheet />}
+                onSelect={() => openWith.open(item.id)}
+              >
+                {importable === "document" ? t("openWithDocs") : t("openWithSheets")}
+              </DropdownItem>
+            ) : null}
             {item.kind === "file" ? (
               <DropdownItem icon={<Download />} onSelect={() => window.location.assign(downloadHref(item.id))}>
                 {t("download")}

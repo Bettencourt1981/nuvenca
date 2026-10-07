@@ -7,7 +7,19 @@ import { supabasePublishableKey, supabaseUrl } from "@/lib/env";
 const handleI18n = createIntlMiddleware(routing);
 
 // Pages that require a signed-in user, and auth pages signed-in users skip.
-const PROTECTED = ["/drive", "/workspaces", "/shared", "/recent", "/starred", "/trash", "/search", "/settings", "/file"];
+const PROTECTED = [
+  "/drive",
+  "/workspaces",
+  "/shared",
+  "/recent",
+  "/starred",
+  "/trash",
+  "/search",
+  "/settings",
+  "/file",
+  "/document",
+  "/spreadsheet",
+];
 const GUEST_ONLY = ["/", "/login", "/signup"];
 
 function appPath(pathname: string): string {

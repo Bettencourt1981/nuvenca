@@ -2,6 +2,8 @@ import { getTranslations } from "next-intl/server";
 import { FileQuestion } from "lucide-react";
 import { buttonClasses } from "@/components/ui/button";
 import { fileCategory, FileIcon } from "./file-icon";
+import { OpenWithButton } from "./open-with";
+import { importableAs } from "@/lib/editors/native";
 
 const TEXT_EXT = /\.(txt|md|csv|tsv|json|log|xml|ya?ml|js|ts|tsx|jsx|css|html|py|java|rb|go|rs|php|c|cpp|h|sh|sql)$/i;
 
@@ -12,6 +14,7 @@ export async function FilePreview({
   sizeBytes,
   src,
   downloadHref,
+  sourceId,
 }: {
   name: string;
   mimeType: string | null;
@@ -19,6 +22,8 @@ export async function FilePreview({
   /** URL that serves the file inline. */
   src: string;
   downloadHref: string;
+  /** Set for signed-in users: offers "Open with Nuvenca Docs/Sheets". */
+  sourceId?: string;
 }) {
   const t = await getTranslations("file");
   const actions = await getTranslations("drive.actions");
@@ -49,14 +54,18 @@ export async function FilePreview({
   }
 
   const office = category === "document" || category === "spreadsheet" || category === "presentation";
+  const importable = sourceId ? importableAs(name, mimeType) : null;
   return (
     <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-surface px-6 py-16 text-center">
       {office ? <FileIcon kind="file" name={name} mimeType={mimeType} className="size-14" /> : <FileQuestion className="size-14 text-muted" aria-hidden />}
       <p className="mt-4 font-medium">{t("noPreview")}</p>
-      <p className="mt-1 max-w-md text-sm text-muted">{office ? t("officeComingSoon") : t("noPreviewHint")}</p>
-      <a href={downloadHref} className={buttonClasses({ className: "mt-6" })}>
-        {actions("download")}
-      </a>
+      <p className="mt-1 max-w-md text-sm text-muted">{importable ? t("officeComingSoon") : t("noPreviewHint")}</p>
+      <div className="mt-6 flex flex-wrap justify-center gap-2">
+        {importable && sourceId ? <OpenWithButton sourceId={sourceId} type={importable} /> : null}
+        <a href={downloadHref} className={buttonClasses({ variant: importable ? "secondary" : "primary" })}>
+          {actions("download")}
+        </a>
+      </div>
     </div>
   );
 }

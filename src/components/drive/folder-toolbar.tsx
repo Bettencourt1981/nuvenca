@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { FileSpreadsheet, FileText, FolderPlus, Plus, Share2, Upload } from "lucide-react";
 import { createFolder } from "@/lib/actions/drive";
+import { createNativeFile } from "@/lib/actions/documents";
+import { useRouter } from "@/i18n/navigation";
 import { useErrorMessage } from "@/hooks/use-error-message";
 import { Button } from "@/components/ui/button";
 import { DropdownContent, DropdownItem, DropdownMenu, DropdownSeparator, DropdownTrigger } from "@/components/ui/dropdown";
@@ -23,9 +25,20 @@ export function FolderToolbar({
   shareFolder?: { id: string; name: string } | null;
 }) {
   const t = useTranslations("drive");
-  const landing = useTranslations("landing");
+  const editor = useTranslations("editor");
   const actions = useTranslations("drive.actions");
   const message = useErrorMessage();
+  const router = useRouter();
+  const createNative = async (type: "document" | "spreadsheet") => {
+    const result = await createNativeFile({
+      workspaceId: target.workspaceId,
+      parentId: target.parentId,
+      name: type === "document" ? editor("docs.untitled") : editor("sheets.untitled"),
+      type,
+    });
+    if (!result.ok) return void toast.error(message(result.error));
+    router.push(`/${type}/${result.data.id}`);
+  };
   const { upload } = useUploads();
   const fileInput = useRef<HTMLInputElement>(null);
   const [folderDialog, setFolderDialog] = useState(false);
@@ -62,13 +75,11 @@ export function FolderToolbar({
                 {t("uploadFiles")}
               </DropdownItem>
               <DropdownSeparator />
-              <DropdownItem icon={<FileText className="text-blue-600" />} disabled>
+              <DropdownItem icon={<FileText className="text-blue-600" />} onSelect={() => createNative("document")}>
                 {t("newDocument")}
-                <span className="ml-auto text-xs text-muted">{landing("comingSoon")}</span>
               </DropdownItem>
-              <DropdownItem icon={<FileSpreadsheet className="text-emerald-600" />} disabled>
+              <DropdownItem icon={<FileSpreadsheet className="text-emerald-600" />} onSelect={() => createNative("spreadsheet")}>
                 {t("newSpreadsheet")}
-                <span className="ml-auto text-xs text-muted">{landing("comingSoon")}</span>
               </DropdownItem>
             </DropdownContent>
           </DropdownMenu>

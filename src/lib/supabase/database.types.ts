@@ -23,7 +23,161 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "file_shares": {
+            "document_assets": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"file_id": string,"id": string,"mime_type": string | null,"size_bytes": number,"status": Database["public"]['Enums']["file_status"],"storage_path": string,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"file_id": string,"id"?: string,"mime_type"?: string | null,"size_bytes"?: number,"status"?: Database["public"]['Enums']["file_status"],"storage_path": string,"workspace_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"file_id"?: string,"id"?: string,"mime_type"?: string | null,"size_bytes"?: number,"status"?: Database["public"]['Enums']["file_status"],"storage_path"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "document_assets_file_id_fkey"
+      columns: ["file_id"]
+isOneToOne: false
+      referencedRelation: "drive_items"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "document_assets_file_id_fkey"
+      columns: ["file_id"]
+isOneToOne: false
+      referencedRelation: "files"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "document_assets_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"document_comments": {
+                  Row: {
+                    "anchor": Json | null,"body": string,"created_at": string,"created_by": string | null,"file_id": string,"id": string,"parent_id": string | null,"quote": string | null,"resolved_at": string | null,"resolved_by": string | null,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "anchor"?: Json | null,"body": string,"created_at"?: string,"created_by"?: string | null,"file_id": string,"id"?: string,"parent_id"?: string | null,"quote"?: string | null,"resolved_at"?: string | null,"resolved_by"?: string | null,"updated_at"?: string
+                  }
+                  Update: {
+                    "anchor"?: Json | null,"body"?: string,"created_at"?: string,"created_by"?: string | null,"file_id"?: string,"id"?: string,"parent_id"?: string | null,"quote"?: string | null,"resolved_at"?: string | null,"resolved_by"?: string | null,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "document_comments_file_id_fkey"
+      columns: ["file_id"]
+isOneToOne: false
+      referencedRelation: "drive_items"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "document_comments_file_id_fkey"
+      columns: ["file_id"]
+isOneToOne: false
+      referencedRelation: "files"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "document_comments_parent_id_fkey"
+      columns: ["parent_id"]
+isOneToOne: false
+      referencedRelation: "document_comments"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"document_states": {
+                  Row: {
+                    "file_id": string,"revision": number,"state": string,"updated_at": string,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "file_id": string,"revision"?: number,"state": string,"updated_at"?: string,"workspace_id": string
+                  }
+                  Update: {
+                    "file_id"?: string,"revision"?: number,"state"?: string,"updated_at"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "document_states_file_id_fkey"
+      columns: ["file_id"]
+isOneToOne: true
+      referencedRelation: "drive_items"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "document_states_file_id_fkey"
+      columns: ["file_id"]
+isOneToOne: true
+      referencedRelation: "files"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "document_states_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"document_updates": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"file_id": string,"id": number,"payload": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"file_id": string,"id"?: never,"payload": string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"file_id"?: string,"id"?: never,"payload"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "document_updates_file_id_fkey"
+      columns: ["file_id"]
+isOneToOne: false
+      referencedRelation: "drive_items"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "document_updates_file_id_fkey"
+      columns: ["file_id"]
+isOneToOne: false
+      referencedRelation: "files"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"document_versions": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"file_id": string,"id": string,"label": string | null,"state": string,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"file_id": string,"id"?: string,"label"?: string | null,"state": string,"workspace_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"file_id"?: string,"id"?: string,"label"?: string | null,"state"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "document_versions_file_id_fkey"
+      columns: ["file_id"]
+isOneToOne: false
+      referencedRelation: "drive_items"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "document_versions_file_id_fkey"
+      columns: ["file_id"]
+isOneToOne: false
+      referencedRelation: "files"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "document_versions_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"file_shares": {
                   Row: {
                     "created_at": string,"created_by": string | null,"email": string,"file_id": string,"id": string,"role": Database["public"]['Enums']["share_role"],"updated_at": string,"user_id": string | null
                   }
@@ -303,7 +457,27 @@ isOneToOne: false
                 }
           }
           Functions: {
-            "add_workspace_member":
+            "add_comment":
+{ Args: { "p_anchor": Json,"p_body": string,"p_file_id": string,"p_parent_id": string,"p_quote": string }; Returns: {
+              "anchor": Json | null,
+"body": string,
+"created_at": string,
+"created_by": string | null,
+"file_id": string,
+"id": string,
+"parent_id": string | null,
+"quote": string | null,
+"resolved_at": string | null,
+"resolved_by": string | null,
+"updated_at": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "document_comments"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"add_workspace_member":
 { Args: { "p_email": string,"p_role": Database["public"]['Enums']["workspace_role"],"p_workspace_id": string }; Returns: {
               "created_at": string,
 "role": Database["public"]['Enums']["workspace_role"],
@@ -316,6 +490,9 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"append_document_update":
+{ Args: { "p_file_id": string,"p_payload": string }; Returns: number
+                           },
 "assert_file_access":
 { Args: { "p_file_id": string,"p_min_level": number }; Returns: {
               "ancestor_ids": (string)[],
@@ -342,6 +519,40 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"assert_native_file":
+{ Args: { "p_file_id": string,"p_min_level": number }; Returns: {
+              "ancestor_ids": (string)[],
+"created_at": string,
+"created_by": string | null,
+"current_version_id": string | null,
+"id": string,
+"in_trash": boolean,
+"kind": Database["public"]['Enums']["file_kind"],
+"mime_type": string | null,
+"name": string,
+"parent_id": string | null,
+"size_bytes": number,
+"status": Database["public"]['Enums']["file_status"],
+"trashed_at": string | null,
+"trashed_by": string | null,
+"updated_at": string,
+"updated_by": string | null,
+"workspace_id": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "files"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"b64":
+{ Args: { "p_data": string }; Returns: string
+                           },
+"begin_asset_upload":
+{ Args: { "p_file_id": string,"p_mime_type": string,"p_size_bytes": number }; Returns: {
+              "asset_id": string,"storage_path": string
+            }[]
+                           },
 "begin_upload":
 { Args: { "p_mime_type": string,"p_name": string,"p_parent_id": string,"p_size_bytes": number,"p_workspace_id": string }; Returns: {
               "file_id": string,"storage_path": string,"version_id": string
@@ -355,6 +566,12 @@ isOneToOne: false
                            },
 "clean_name":
 { Args: { "p_name": string }; Returns: string
+                           },
+"compact_document":
+{ Args: { "p_expected_revision": number,"p_file_id": string,"p_last_update_id": number,"p_state": string }; Returns: boolean
+                           },
+"complete_asset_upload":
+{ Args: { "p_asset_id": string,"p_size_bytes": number }; Returns: undefined
                            },
 "complete_upload":
 { Args: { "p_mime_type": string,"p_size_bytes": number,"p_version_id": string }; Returns: {
@@ -382,8 +599,37 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"create_document_version":
+{ Args: { "p_file_id": string,"p_label": string,"p_state": string }; Returns: string
+                           },
 "create_folder":
 { Args: { "p_name": string,"p_parent_id": string,"p_workspace_id": string }; Returns: {
+              "ancestor_ids": (string)[],
+"created_at": string,
+"created_by": string | null,
+"current_version_id": string | null,
+"id": string,
+"in_trash": boolean,
+"kind": Database["public"]['Enums']["file_kind"],
+"mime_type": string | null,
+"name": string,
+"parent_id": string | null,
+"size_bytes": number,
+"status": Database["public"]['Enums']["file_status"],
+"trashed_at": string | null,
+"trashed_by": string | null,
+"updated_at": string,
+"updated_by": string | null,
+"workspace_id": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "files"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"create_native_file":
+{ Args: { "p_name": string,"p_parent_id": string,"p_state": string,"p_type": string,"p_workspace_id": string }; Returns: {
               "ancestor_ids": (string)[],
 "created_at": string,
 "created_by": string | null,
@@ -425,8 +671,14 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"delete_comment":
+{ Args: { "p_comment_id": string }; Returns: undefined
+                           },
 "delete_files_forever":
 { Args: { "p_file_ids": (string)[] }; Returns: (string)[]
+                           },
+"edit_comment":
+{ Args: { "p_body": string,"p_comment_id": string }; Returns: undefined
                            },
 "empty_trash":
 { Args: { "p_workspace_id": string }; Returns: (string)[]
@@ -436,6 +688,9 @@ isOneToOne: false
                            },
 "file_path_access_level":
 { Args: { "p_path": (string)[],"p_workspace_id": string }; Returns: number
+                           },
+"get_document_version":
+{ Args: { "p_version_id": string }; Returns: string
                            },
 "get_file_access_list":
 { Args: { "p_file_id": string }; Returns: {
@@ -452,8 +707,25 @@ isOneToOne: false
               "avatar_url": string,"created_at": string,"email": string,"full_name": string,"role": Database["public"]['Enums']["workspace_role"],"user_id": string
             }[]
                            },
+"is_native_mime":
+{ Args: { "p_mime": string }; Returns: boolean
+                           },
 "is_workspace_member":
 { Args: { "p_workspace_id": string }; Returns: boolean
+                           },
+"join_via_link":
+{ Args: { "p_token": string }; Returns: string
+                           },
+"label_document_version":
+{ Args: { "p_label": string,"p_version_id": string }; Returns: undefined
+                           },
+"list_document_versions":
+{ Args: { "p_file_id": string }; Returns: {
+              "author_name": string,"created_at": string,"created_by": string,"id": string,"label": string,"size_bytes": number
+            }[]
+                           },
+"load_document":
+{ Args: { "p_file_id": string }; Returns: Json
                            },
 "move_files":
 { Args: { "p_file_ids": (string)[],"p_target_parent_id": string }; Returns: number
@@ -463,6 +735,9 @@ isOneToOne: false
                            },
 "purge_expired_items":
 { Args: Record<PropertyKey, never>; Returns: (string)[]
+                           },
+"realtime_file_access":
+{ Args: { "p_topic": string }; Returns: number
                            },
 "remove_share":
 { Args: { "p_share_id": string }; Returns: undefined
@@ -515,6 +790,9 @@ isOneToOne: false
       } },
 "require_user":
 { Args: Record<PropertyKey, never>; Returns: string
+                           },
+"resolve_comment":
+{ Args: { "p_comment_id": string,"p_resolved": boolean }; Returns: undefined
                            },
 "resolve_target_workspace":
 { Args: { "p_parent_id": string,"p_workspace_id": string }; Returns: string
@@ -588,6 +866,9 @@ isOneToOne: false
       } },
 "trash_files":
 { Args: { "p_file_ids": (string)[] }; Returns: number
+                           },
+"unb64":
+{ Args: { "p_text": string }; Returns: string
                            },
 "update_profile":
 { Args: { "p_full_name": string,"p_locale": string }; Returns: {

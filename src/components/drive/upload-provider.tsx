@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { CheckCircle2, ChevronDown, ChevronUp, CircleAlert, X } from "lucide-react";
 import { useRouter } from "@/i18n/navigation";
 import { cancelUpload, finishUpload, startUpload } from "@/lib/actions/drive";
-import { supabasePublishableKey } from "@/lib/env";
+import { putToSignedUrl } from "@/lib/upload";
 import { useErrorMessage } from "@/hooks/use-error-message";
 import { FileIcon } from "./file-icon";
 
@@ -36,24 +36,8 @@ export function useUploads() {
   return value;
 }
 
-/** PUT the bytes to the signed Storage URL, reporting progress. */
 function putFile(task: UploadTask, url: string, onProgress: (fraction: number) => void): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    task.xhr = xhr;
-    xhr.open("PUT", url);
-    xhr.setRequestHeader("apikey", supabasePublishableKey);
-    xhr.setRequestHeader("x-upsert", "false");
-    xhr.setRequestHeader("cache-control", "max-age=3600");
-    xhr.setRequestHeader("content-type", task.file.type || "application/octet-stream");
-    xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable) onProgress(event.loaded / event.total);
-    };
-    xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error("upload_failed")));
-    xhr.onerror = () => reject(new Error("upload_failed"));
-    xhr.onabort = () => reject(new Error("canceled"));
-    xhr.send(task.file);
-  });
+  return putToSignedUrl(url, task.file, { onProgress, onStart: (xhr) => (task.xhr = xhr) });
 }
 
 export function UploadProvider({ children }: { children: ReactNode }) {
