@@ -1,0 +1,290 @@
+/* Document editor: the page and its content. */
+
+.doc-scroller {
+  background: var(--surface-muted);
+}
+
+.doc-page {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 816px; /* A4/Letter width at 96 dpi */
+  min-height: 1056px;
+  margin: 24px auto 16px;
+  padding: 72px 80px;
+  background: #fff;
+  color: #1f1f1f;
+  border: 1px solid #e3e6ec;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 0.08);
+}
+
+@media (max-width: 860px) {
+  .doc-page {
+    margin: 0;
+    min-height: 100%;
+    padding: 24px 20px 48px;
+    border: 0;
+    box-shadow: none;
+  }
+}
+
+.doc-content {
+  outline: none;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11pt;
+  line-height: 1.5;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  min-height: 600px;
+}
+
+.doc-content > * + * {
+  margin-top: 0.4em;
+}
+.doc-content p {
+  margin: 0;
+}
+.doc-content h1 {
+  font-size: 20pt;
+  font-weight: 400;
+  margin: 0.8em 0 0.3em;
+}
+.doc-content h2 {
+  font-size: 16pt;
+  font-weight: 400;
+  margin: 0.8em 0 0.3em;
+}
+.doc-content h3 {
+  font-size: 14pt;
+  font-weight: 400;
+  color: #434343;
+  margin: 0.7em 0 0.25em;
+}
+.doc-content h4 {
+  font-size: 12pt;
+  font-weight: 400;
+  color: #666;
+  margin: 0.6em 0 0.2em;
+}
+.doc-content h1:first-child,
+.doc-content h2:first-child {
+  margin-top: 0;
+}
+.doc-content a {
+  color: #1155cc;
+  text-decoration: underline;
+}
+.doc-content ul,
+.doc-content ol {
+  padding-left: 1.6em;
+}
+.doc-content ul {
+  list-style: disc;
+}
+.doc-content ul ul {
+  list-style: circle;
+}
+.doc-content ul ul ul {
+  list-style: square;
+}
+.doc-content ol {
+  list-style: decimal;
+}
+.doc-content ol ol {
+  list-style: lower-alpha;
+}
+.doc-content ol ol ol {
+  list-style: lower-roman;
+}
+.doc-content li > p {
+  margin: 0;
+}
+.doc-content ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0.2em;
+}
+.doc-content ul[data-type="taskList"] li {
+  display: flex;
+  gap: 0.5em;
+  align-items: flex-start;
+}
+.doc-content ul[data-type="taskList"] li > label {
+  margin-top: 0.2em;
+  user-select: none;
+}
+.doc-content ul[data-type="taskList"] li > label input {
+  accent-color: #2563eb;
+  width: 1em;
+  height: 1em;
+}
+.doc-content ul[data-type="taskList"] li[data-checked="true"] > div {
+  text-decoration: line-through;
+  color: #888;
+}
+.doc-content ul[data-type="taskList"] li > div {
+  flex: 1;
+}
+.doc-content blockquote {
+  border-left: 3px solid #d0d7e2;
+  padding-left: 1em;
+  color: #555;
+}
+.doc-content pre {
+  background: #f4f6f9;
+  border-radius: 6px;
+  padding: 0.75em 1em;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 10pt;
+  white-space: pre-wrap;
+}
+.doc-content code {
+  background: #f1f3f5;
+  border-radius: 4px;
+  padding: 0.1em 0.3em;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 0.95em;
+}
+.doc-content pre code {
+  background: none;
+  padding: 0;
+}
+.doc-content hr {
+  border: 0;
+  border-top: 1px solid #c9ced8;
+  margin: 1em 0;
+}
+.doc-content img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0.5em 0;
+}
+.doc-content img.ProseMirror-selectednode {
+  outline: 2px solid #2563eb;
+}
+
+/* Tables */
+.doc-content .tableWrapper {
+  overflow-x: auto;
+  margin: 0.6em 0;
+}
+.doc-content table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+}
+.doc-content th,
+.doc-content td {
+  border: 1px solid #c9ced8;
+  padding: 4px 8px;
+  vertical-align: top;
+  position: relative;
+  min-width: 2em;
+}
+.doc-content th {
+  background: #f4f6f9;
+  font-weight: 600;
+  text-align: left;
+}
+.doc-content .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgb(37 99 235 / 0.15);
+  pointer-events: none;
+}
+.doc-content .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: -2px;
+  width: 4px;
+  background: #2563eb;
+  pointer-events: none;
+}
+.doc-content.resize-cursor {
+  cursor: col-resize;
+}
+
+/* Placeholder */
+.doc-content p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: #9aa3b2;
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Collaborators' cursors */
+.collaboration-carets__caret {
+  position: relative;
+  margin-left: -1px;
+  margin-right: -1px;
+  border-left: 2px solid;
+  border-right: 0;
+  word-break: normal;
+  pointer-events: none;
+}
+.collaboration-carets__label {
+  position: absolute;
+  top: -1.45em;
+  left: -2px;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  color: #fff;
+  padding: 3px 5px;
+  border-radius: 4px 4px 4px 0;
+  user-select: none;
+}
+.collaboration-carets__selection {
+  opacity: 0.25;
+}
+
+/* Comments */
+.comment-mark {
+  background: rgb(251 191 36 / 0.35);
+  border-bottom: 2px solid rgb(245 158 11 / 0.7);
+  cursor: pointer;
+}
+.comment-mark-active {
+  background: rgb(251 191 36 / 0.65);
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .doc-scroller {
+    background: #fff;
+    overflow: visible !important;
+  }
+  .doc-page {
+    margin: 0;
+    padding: 0;
+    max-width: none;
+    min-height: 0;
+    border: 0;
+    box-shadow: none;
+  }
+  .comment-mark,
+  .comment-mark-active {
+    background: none;
+    border: 0;
+  }
+  .collaboration-carets__caret,
+  .collaboration-carets__label {
+    display: none;
+  }
+}
+
+@media print {
+  .editor-shell {
+    display: block !important;
+    height: auto !important;
+  }
+  .editor-shell * {
+    overflow: visible !important;
+  }
+}

@@ -572,7 +572,7 @@ begin
   );
 
   insert into public.workspaces (name, kind, owner_id)
-  values ('My Drive', 'personal', new.id)
+  values ('Personal', 'personal', new.id)
   returning id into v_workspace_id;
 
   insert into public.workspace_members (workspace_id, user_id, role)

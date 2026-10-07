@@ -108,7 +108,7 @@ enabled = true
 # Port to use for the email testing server web interface.
 port = 54324
 # Uncomment to expose additional ports for testing user applications that send emails.
-# smtp_port = 54325
+smtp_port = 54325
 # pop3_port = 54326
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
@@ -244,10 +244,19 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
-# Uncomment to customize email template
-# [auth.email.template.invite]
-# subject = "You have been invited"
-# content_path = "./supabase/templates/invite.html"
+# Account emails in Portuguese, or English for accounts created in English
+# (user metadata `locale`). The hosted project uses the same files.
+[auth.email.template.confirmation]
+subject = "{{ if eq (printf \"%v\" .Data.locale) \"en\" }}Confirm your Nuvenca account{{ else }}Confirme a sua conta Nuvenca{{ end }}"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "{{ if eq (printf \"%v\" .Data.locale) \"en\" }}Reset your Nuvenca password{{ else }}Redefinir a palavra-passe do Nuvenca{{ end }}"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.email.template.email_change]
+subject = "{{ if eq (printf \"%v\" .Data.locale) \"en\" }}Confirm your new email{{ else }}Confirme o novo email{{ end }}"
+content_path = "./supabase/templates/email_change.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
