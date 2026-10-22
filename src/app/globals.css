@@ -73,3 +73,14 @@ body {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
+
+/* Menus, tooltips and notifications never belong in a printout, even when one
+   is open as the print dialog appears (Ctrl+P with a menu open, for instance). */
+@media print {
+  [data-radix-popper-content-wrapper],
+  [role="menu"],
+  [role="tooltip"],
+  [data-sonner-toaster] {
+    display: none !important;
+  }
+}

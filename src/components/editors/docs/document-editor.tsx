@@ -387,6 +387,11 @@ export function DocumentEditor({
   );
 }
 
+/** Print once the File menu has closed, so the menu isn't captured in the printout. */
+function printAfterMenuCloses() {
+  requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
+}
+
 function WordCount({ editor }: { editor: Editor }) {
   const t = useTranslations("editor.docs");
   const words = useEditorState({ editor, selector: ({ editor: e }) => e.storage.characterCount.words() });
@@ -451,7 +456,7 @@ function DocumentMenus({
                       </DropdownItem>
                     </>
                   ) : null}
-                  <DropdownItem icon={<Printer />} onSelect={() => window.print()}>
+                  <DropdownItem icon={<Printer />} onSelect={printAfterMenuCloses}>
                     {t("docs.printPdf")}
                   </DropdownItem>
                   {canEdit ? (

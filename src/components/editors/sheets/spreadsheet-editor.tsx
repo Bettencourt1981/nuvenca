@@ -130,6 +130,8 @@ export function SpreadsheetEditor({
       setVersion((v) => v + 1);
     };
     doc.on("update", onUpdate);
+    // The local copy can load before this subscription exists: catch up.
+    onUpdate();
     return () => doc.off("update", onUpdate);
   }, [doc, wb]);
 
@@ -667,8 +669,12 @@ export function SpreadsheetEditor({
   // A workbook always has a sheet (e.g. a file whose first sheet was never created).
   const emptyWorkbook = synced && !importId && canEdit && sheets.length === 0;
   useEffect(() => {
-    if (emptyWorkbook) addSheet(doc, ts("sheetName", { number: 1 }));
-  }, [emptyWorkbook, doc, ts]);
+    if (!emptyWorkbook) return;
+    // Check the document itself, not the last render, so a workbook that has
+    // just loaded never gets a second "Sheet1".
+    wb.invalidate();
+    if (wb.sheets().length === 0) addSheet(doc, ts("sheetName", { number: 1 }));
+  }, [emptyWorkbook, doc, wb, ts]);
   useEffect(() => {
     if (!synced || !importId || importing.current) return;
     importing.current = true;
